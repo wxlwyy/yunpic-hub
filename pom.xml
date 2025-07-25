@@ -14,6 +14,12 @@
         <spring-boot.version>2.7.6</spring-boot.version>
     </properties>
     <dependencies>
+        <!--对象存储cos-->
+        <dependency>
+            <groupId>com.qcloud</groupId>
+            <artifactId>cos_api</artifactId>
+            <version>5.6.227</version>
+        </dependency>
         <!-- jdk 8+ 引入可选模块，mybatisplus分页插件 -->
         <dependency>
             <groupId>com.baomidou</groupId>
