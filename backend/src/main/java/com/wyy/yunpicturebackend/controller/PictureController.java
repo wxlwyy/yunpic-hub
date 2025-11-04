@@ -15,6 +15,7 @@ import com.wyy.yunpicturebackend.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.model.dto.picture.*;
 import com.wyy.yunpicturebackend.model.entity.Picture;
 import com.wyy.yunpicturebackend.model.entity.User;
+import com.wyy.yunpicturebackend.model.enums.PictureReviewStatusEnum;
 import com.wyy.yunpicturebackend.model.vo.PictureTagCategory;
 import com.wyy.yunpicturebackend.model.vo.PictureVO;
 import com.wyy.yunpicturebackend.service.PictureService;
@@ -181,6 +182,8 @@ public class PictureController {
         Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize), queryWrapper);
         //防爬
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
+        //普通用户只可以查看过审的图片
+        queryPictureRequest.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
         //脱敏
         Page<PictureVO> pictureVOPage = pictureService.getPictureVOPage(picturePage);
         return ResultUtils.success(pictureVOPage);

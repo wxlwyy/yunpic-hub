@@ -196,6 +196,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         String searchText = queryPictureRequest.getSearchText();
         String sortField = queryPictureRequest.getSortField();
         String sortOrder = queryPictureRequest.getSortOrder();
+        Integer reviewStatus = queryPictureRequest.getReviewStatus();
+        Long reviewerId = queryPictureRequest.getReviewerId();
+        String reviewMessage = queryPictureRequest.getReviewMessage();
         //搜索框查询
         if (StrUtil.isNotBlank(searchText)){
             queryWrapper.and(qw -> qw.like("name", searchText)
@@ -205,6 +208,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
         queryWrapper.like(StrUtil.isNotBlank(name), "name", name);
         queryWrapper.like(StrUtil.isNotBlank(introduction), "introduction", introduction);
+        queryWrapper.like(StrUtil.isNotBlank(reviewMessage), "reviewMessage", reviewMessage);
         queryWrapper.eq(StrUtil.isNotBlank(category), "category", category);
         queryWrapper.eq(ObjUtil.isNotNull(picSize), "picSize", picSize);
         queryWrapper.eq(ObjUtil.isNotNull(picWidth), "picWidth", picWidth);
@@ -212,6 +216,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.eq(ObjUtil.isNotNull(picScale), "picScale", picScale);
         queryWrapper.eq(StrUtil.isNotBlank(picFormat), "picFormat", picFormat);
         queryWrapper.eq(ObjUtil.isNotNull(userId), "userId", userId);
+        queryWrapper.eq(ObjUtil.isNotNull(reviewStatus), "reviewStatus", reviewStatus);
+        queryWrapper.eq(ObjUtil.isNotNull(reviewerId), "userId", reviewerId);
         if (CollUtil.isNotEmpty(tags)){
             tags.forEach(tag -> queryWrapper.like("tags", "\"" + tag + "\""));
         }
