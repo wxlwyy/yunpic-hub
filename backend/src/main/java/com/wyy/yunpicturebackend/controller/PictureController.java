@@ -90,7 +90,8 @@ public class PictureController {
      */
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/update")
-    public BaseResponse<Boolean> updatePicture(@RequestBody UpdatePictureRequest updatePictureRequest){
+    public BaseResponse<Boolean> updatePicture(@RequestBody UpdatePictureRequest updatePictureRequest,
+                                               HttpServletRequest request){
         //粗略校验
         if (updatePictureRequest == null || updatePictureRequest.getId() < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -105,6 +106,9 @@ public class PictureController {
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
         //详细校验
         pictureService.validPicture(picture);
+        //补充审核参数
+        User loginUser = userService.getLoginUser(request);
+        pictureService.fillPictureReviewParams(picture, loginUser);
         //更新
         boolean success = pictureService.updateById(picture);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
@@ -117,7 +121,8 @@ public class PictureController {
      * @return
      */
     @PostMapping("/edit")
-    public BaseResponse<Boolean> editPicture(@RequestBody EditPictureRequest editPictureRequest, HttpServletRequest request){
+    public BaseResponse<Boolean> editPicture(@RequestBody EditPictureRequest editPictureRequest,
+                                             HttpServletRequest request){
         //粗略校验
         if (editPictureRequest == null || editPictureRequest.getId() < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -133,10 +138,12 @@ public class PictureController {
         //详细校验
         pictureService.validPicture(picture);
         //是否为本人或管理员
-        User user = userService.getLoginUser(request);
-        if (!(oldPicture.getUserId().equals(user.getId()) || userService.isAdmin(user)) ){
+        User loginUser = userService.getLoginUser(request);
+        if (!(oldPicture.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser)) ){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        //补充审核参数
+        pictureService.fillPictureReviewParams(picture, loginUser);
         //更新信息
         boolean success = pictureService.updateById(picture);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);

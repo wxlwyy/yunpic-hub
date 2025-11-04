@@ -180,7 +180,6 @@ declare namespace API {
     editTime?: string
     id?: number
     introduction?: string
-    isDelete?: number
     name?: string
     picFormat?: string
     picHeight?: number

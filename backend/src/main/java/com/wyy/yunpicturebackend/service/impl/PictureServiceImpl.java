@@ -87,6 +87,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setPicScale(uploadPictureResult.getPicScale());
         picture.setPicFormat(uploadPictureResult.getPicFormat());
         picture.setUserId(loginUser.getId());
+        //设置审核参数
+        fillPictureReviewParams(picture, loginUser);
         //如果是更新就额外赋值
         if (pictureId != null) {
             picture.setId(pictureId);
@@ -246,6 +248,24 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         return true;
     }
 
+    /**
+     * 设置图片审核参数
+     * @param picture
+     * @param loginUser
+     */
+    @Override
+    public void fillPictureReviewParams(Picture picture, User loginUser) {
+        if (userService.isAdmin(loginUser)){
+            //管理员自动过审
+            picture.setReviewerId(loginUser.getId());
+            picture.setReviewTime(new Date());
+            picture.setReviewMessage("管理员自动过审");
+            picture.setReviewStatus(PictureReviewStatusEnum.PASS.getValue());
+        } else {
+            //非管理员，创建或编辑都要改为待审核
+            picture.setReviewStatus(PictureReviewStatusEnum.REVIEWING.getValue());
+        }
+    }
 
 
 }

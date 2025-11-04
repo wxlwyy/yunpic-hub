@@ -140,7 +140,7 @@ public class UserController {
     }
 
     /**
-     * 根据id查询用户脱敏数据
+     * 根据id查询单个用户脱敏数据
      * @param id 用户id
      * @return 用户脱敏数据
      */

@@ -8,8 +8,8 @@ healthUsingGet().then((res) => {
   console.log(res)
 })
 
-const loginUserStore = useLoginUserStore()
-loginUserStore.fetchLoginUser()
+/*const loginUserStore = useLoginUserStore()
+loginUserStore.fetchLoginUser()*/
 </script>
 
 <template>

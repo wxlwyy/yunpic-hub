@@ -96,10 +96,6 @@ public class PictureVO implements Serializable {
      */
     private Date updateTime;
 
-    /**
-     * 是否删除
-     */
-    private Integer isDelete;
 
     /**
      * 创建改图片的用户信息
