@@ -3,12 +3,15 @@ server:
   port: 8080
   servlet:
     context-path: /api
-
+    session:
+      # 设置cookie
+      cookie:
+        max-age: 2592000
 #应用名称
 spring:
   application:
     name: yun-picture-backend
-#文件大小配置
+  #文件大小配置
   servlet:
     multipart:
       max-file-size: 5MB
@@ -19,6 +22,17 @@ spring:
     url: jdbc:mysql://localhost:3306/yun_picture
     password: 123456
     username: root #这里一定要注意不是name（数据源名称）而是username！！！
+  # Redis 配置
+  redis:
+    database: 0
+    host: 127.0.0.1
+    port: 6379
+    timeout: 5000
+    password: 123456
+  # session配置
+  session:
+    store-type: redis
+    timeout: 2592000
 #mybatisplus配置
 mybatis-plus:
   configuration:

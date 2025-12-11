@@ -4,7 +4,7 @@
     <div class="search-bar">
       <a-input-search
         v-model:value="searchParams.searchText"
-        placeholder="搜索图片"
+        placeholder="输入图片名称或简介"
         enter-button="搜索"
         size="large"
         @search="doSearch"
@@ -38,7 +38,7 @@
         <a-list-item style="padding: 0">
           <a-card hoverable @click="doClickPicture(picture)">
             <template #cover>
-              <img style="height: 180px; object-fit: contain" :alt="picture.name" :src="picture.url" />
+              <img style="height: 180px; object-fit: contain" :alt="picture.name" :src="picture.thumbnailUrl ?? picture.url" />
             </template>
             <a-card-meta :title="picture.name">
               <template #description>

@@ -32,6 +32,10 @@ const props = defineProps<Props>()
 
 const loading = ref<boolean>(false);
 
+/**
+ * 上传前的校验
+ * @param file
+ */
 const beforeUpload = (file: UploadProps['fileList'][number]) => {
   const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
   if (!isJpgOrPng) {
@@ -46,7 +50,6 @@ const beforeUpload = (file: UploadProps['fileList'][number]) => {
 
 const handleUpload = async ({file}: any) => {
   loading.value = true;
-
   try {
     const params = props.picture ? {id: props.picture.id } : {};
     const res = await uploadPictureUsingPost(params, {}, file);
