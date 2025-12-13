@@ -26,6 +26,7 @@ import com.wyy.yunpicturebackend.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,8 +43,10 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     implements SpaceService{
 
 
+    @Resource
     private UserService userService;
 
+    @Resource
     private TransactionTemplate transactionTemplate;
 
     /**
@@ -96,12 +99,12 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     public Page<SpaceVO> getSpaceVOPage(Page<Space> spacePage) {
         //取出分页数据
         List<Space> spaceList = spacePage.getRecords();
-        //判断数据是否为空
-        if (spaceList == null) {
-            return null;
-        }
         //new一个包装page
         Page<SpaceVO> spaceVOPage = new Page<>(spacePage.getCurrent(), spacePage.getSize(), spacePage.getTotal());
+        //判断数据是否为空，因为 spaceList 是一个空列表 []，它不是 null。
+        if (CollUtil.isEmpty(spaceList)) {
+            return spaceVOPage;
+        }
         //把spaceList转为包装list
         List<SpaceVO> spaceVOList = spaceList.stream().map(p -> SpaceVO.objToVo(p)).collect(Collectors.toList());
         //关联用户信息，先查所有用户Id（放到set防止重复），用Id查出集合，用户信息绑定
@@ -191,15 +194,21 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         space.setUserId(userId);
         //校验数据
         validSpace(space, true);
-        //校验权限
-        if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue() && !userService.isAdmin(loginUser)) {
+        //校验权限（普通用户只能创建普通版，管理员可以创建任何版）
+        /*if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue() && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
+        }*/
+        boolean isAdmin = userService.isAdmin(loginUser);
+        if (!isAdmin) {
+            if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue()) {
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
+            }
         }
         //加锁，写入数据库
         String lock = String.valueOf(userId).intern();
         synchronized (lock) {
             Long newSpaceId = transactionTemplate.execute(status -> {
-                boolean exists = lambdaQuery().eq(space1 -> space1.getUserId(), userId).exists();
+                boolean exists = lambdaQuery().eq(Space::getUserId, userId).exists();
                 ThrowUtils.throwIf(exists, ErrorCode.OPERATION_ERROR, "每个用户仅能创建一个空间");
                 boolean success = save(space);
                 ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);

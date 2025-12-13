@@ -219,7 +219,7 @@ public class PictureController {
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
             User loginUser = userService.getLoginUser(request);
             //私人图库，只有本人可以查看所有图片
-            if (loginUser.getId().equals(space.getUserId())) {
+            if (!loginUser.getId().equals(space.getUserId())) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "没有空间权限");
             }
         }

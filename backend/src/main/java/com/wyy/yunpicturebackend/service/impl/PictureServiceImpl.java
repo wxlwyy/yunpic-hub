@@ -190,15 +190,15 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 if (isUpdate) {
                     //替换图片
                     boolean update = spaceService.lambdaUpdate()
-                            .eq(space -> space.getId(), finalSpaceId)
-                            .setSql("totalSize = totalSize - ? + ?", finalOldPicSize, picture.getPicSize())
+                            .eq(Space::getId, finalSpaceId)
+                            .setSql("totalSize = totalSize - {0} + {1}", finalOldPicSize, picture.getPicSize())
                             .update();
                     ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "额度更新失败");
                 } else {
                     //新增图片
                     boolean update = spaceService.lambdaUpdate()
-                            .eq(space -> space.getId(), finalSpaceId)
-                            .setSql("totalSize = totalSize + ?", picture.getPicSize())
+                            .eq(Space::getId, finalSpaceId)
+                            .setSql("totalSize = totalSize + {0}", picture.getPicSize())
                             .setSql("totalCount = totalCount + 1")
                             .update();
                     ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "额度更新失败");
@@ -293,8 +293,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             if (finalSpaceId != null) {
                 //删除图片，更新空间大小
                 boolean update = spaceService.lambdaUpdate()
-                        .eq(space -> space.getId(), finalSpaceId)
-                        .setSql("totalSize = totalSize - ?", oldPicture.getPicSize())
+                        .eq(Space::getId, finalSpaceId)
+                        .setSql("totalSize = totalSize - {0}", oldPicture.getPicSize())
                         .setSql("totalCount = totalCount - 1")
                         .update();
                 ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "额度更新失败");
@@ -452,6 +452,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Integer reviewStatus = queryPictureRequest.getReviewStatus();
         Long reviewerId = queryPictureRequest.getReviewerId();
         String reviewMessage = queryPictureRequest.getReviewMessage();
+        Date startEditTime = queryPictureRequest.getStartEditTime();
+        Date endEditTime = queryPictureRequest.getEndEditTime();
         //搜索框查询
         if (StrUtil.isNotBlank(searchText)){
             queryWrapper.and(qw -> qw.like("name", searchText)
@@ -473,6 +475,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.eq(ObjUtil.isNotEmpty(userId), "userId", userId);
         queryWrapper.eq(ObjUtil.isNotEmpty(reviewStatus), "reviewStatus", reviewStatus);
         queryWrapper.eq(ObjUtil.isNotEmpty(reviewerId), "reviewerId", reviewerId);
+        // >=
+        queryWrapper.ge(ObjUtil.isNotEmpty(startEditTime), "editTime", startEditTime);
+        // <
+        queryWrapper.lt(ObjUtil.isNotEmpty(endEditTime), "editTime", endEditTime);
         if (CollUtil.isNotEmpty(tags)){
             tags.forEach(tag -> queryWrapper.like("tags", "\"" + tag + "\""));
         }
@@ -537,7 +543,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Override
     public void clearCosPictureFile(Picture oldPicture) {
         String pictureUrl = oldPicture.getUrl();
-        Long count = userService.lambdaQuery().eq(user -> user.getUserAvatar(), pictureUrl).count();
+        Long count = userService.lambdaQuery().eq(User::getUserAvatar, pictureUrl).count();
         //如果图片存在于其他表中（这里比如说用户表），就不能删除
         if (count > 0) {
             return;

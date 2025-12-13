@@ -175,6 +175,7 @@ const searchParams = reactive<API.QueryPictureRequest>({
 const fetchData = async () => {
   const res = await listPictureByPageUsingPost({
     ...searchParams,
+    nullSpaceId: true,
   })
   if (res.data.code === 0 && res.data.data) {
     dataList.value = res.data.data.records ?? []   //dataList数据变化，页面图片数据立马刷新

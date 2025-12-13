@@ -121,14 +121,20 @@ const canEdit = computed(() => {
     return false
   }
   // 仅本人或管理员可编辑
-  const user = picture.value.user || {}
+  const user = picture.value.userVO || {}
   return loginUser.id === user.id || loginUser.userRole === 'admin'
 })
 
 const router = useRouter()
 // 编辑
 const doEdit = () => {
-  router.push('/add_picture?id=' + picture.value.id)
+  router.push({
+    path: '/add_picture',
+    query: {
+      id: picture.value.id,
+      spaceId: picture.value.spaceId
+    }
+  })
 }
 // 删除
 const doDelete = async () => {

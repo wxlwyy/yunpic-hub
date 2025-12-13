@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import GlobalHeader from '@/components/GlobalHeader.vue'
+import GlobalSider from '@/components/GlobalSider.vue'
 </script>
 
 <template>
@@ -9,9 +10,13 @@ import GlobalHeader from '@/components/GlobalHeader.vue'
       <a-layout-header class="header">
         <GlobalHeader/>
       </a-layout-header>
-      <a-layout-content class="content">
-        <router-view />
-      </a-layout-content>
+      <a-layout>
+        <GlobalSider class="sider" />
+        <a-layout-content class="content">
+          <router-view />
+        </a-layout-content>
+      </a-layout>
+
       <a-layout-footer class="footer">智能协同云图库</a-layout-footer>
     </a-layout>
   </div>
@@ -20,13 +25,22 @@ import GlobalHeader from '@/components/GlobalHeader.vue'
 <style scoped>
 #basicLayout .header {
   background: white;
-  margin-bottom: 16px;
+  margin-bottom: 1px;
   padding-inline: 20px;
 }
 #basicLayout .content {
   background: linear-gradient(to right, #fefefe, #fff);
-  padding: 20px;
+  padding: 28px;
   margin-bottom: 35px;
+}
+#basicLayout .sider {
+  background: #fff;
+  padding-top: 20px;
+  border-right: 0.5px solid #eee;
+}
+#basicLayout :deep(.ant-menu-root) {
+  border-bottom: none !important;
+  border-inline-end: none !important;
 }
 #basicLayout .footer {
   background: #efefef;
