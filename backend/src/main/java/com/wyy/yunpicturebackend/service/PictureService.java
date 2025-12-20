@@ -10,6 +10,8 @@ import com.wyy.yunpicturebackend.model.vo.PictureVO;
 import io.swagger.models.auth.In;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
 * @author wxl
 * @description 针对表【picture(图片表)】的数据库操作Service
@@ -47,6 +49,14 @@ public interface PictureService extends IService<Picture> {
      * @param loginUser
      */
     void editPicture(EditPictureRequest editPictureRequest, User loginUser);
+
+    /**
+     * 将个人空间中的图片批量修改为相同的分类/标签/名称
+     * @param editPictureByBatchRequest
+     * @param loginUser
+     * @return
+     */
+    void editPictureByBatch(EditPictureByBatchRequest editPictureByBatchRequest, User loginUser);
 
     /**
      * 空间权限校验
@@ -94,11 +104,20 @@ public interface PictureService extends IService<Picture> {
      * @param picture
      * @param loginUser
      */
-    public void fillPictureReviewParams(Picture picture, User loginUser);
+    void fillPictureReviewParams(Picture picture, User loginUser);
 
     /**
      * 删除云存储上的图片
      * @param oldPicture
      */
-    public void clearCosPictureFile(Picture oldPicture);
+    void clearCosPictureFile(Picture oldPicture);
+
+    /**
+     * 通过颜色搜索图片
+     * @param spaceId
+     * @param picColor
+     * @param loginUser
+     * @return
+     */
+    List<PictureVO> searchPictureByColor(Long spaceId, String picColor, User loginUser);
 }

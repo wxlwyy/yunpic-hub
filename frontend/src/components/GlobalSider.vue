@@ -1,5 +1,5 @@
 <template>
-  <div id="globalSider">
+  <div class="globalSider">
     <a-layout-sider
       v-if="loginUserStore.loginUser.id"
       class="sider"

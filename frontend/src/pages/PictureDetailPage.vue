@@ -44,12 +44,31 @@
             <a-descriptions-item label="大小">
               {{ formatSize(picture.picSize) }}
             </a-descriptions-item>
+            <a-descriptions-item label="主色调">
+              <a-space>
+                {{ picture.picColor ?? '-' }}
+                <div
+                  v-if="picture.picColor"
+                  :style="{
+                    backgroundColor: toHexColor(picture.picColor),
+                    width: '16px',
+                    height: '16px',
+                  }"
+                />
+              </a-space>
+            </a-descriptions-item>
           </a-descriptions>
           <a-space wrap>
             <a-button type="primary" @click="doDownload">
               免费下载
               <template #icon>
                 <DownloadOutlined />
+              </template>
+            </a-button>
+            <a-button type="primary" ghost @click="doShare">
+              分享
+              <template #icon>
+                <ShareAltOutlined />
               </template>
             </a-button>
             <a-button v-if="canEdit" type="default" @click="doEdit">
@@ -68,6 +87,7 @@
         </a-card>
       </a-col>
     </a-row>
+    <ShareModel ref="shareModalRef" :link="shareLink" />
   </div>
 </template>
 
@@ -78,12 +98,14 @@ import {
   deletePictureUsingPost,
   getPictureVoByIdUsingGet,
   listPictureTagCategoryUsingGet,
-  listPictureVoByPageUsingPost
+  listPictureVoByPageUsingPost,
 } from '@/api/pictureController.ts'
 import { message } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
-import { downloadImage, formatSize } from '../utils'
+import { downloadImage, formatSize, toHexColor } from '../utils'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
+import { DeleteOutlined, EditOutlined, DownloadOutlined, ShareAltOutlined} from '@ant-design/icons-vue';
+import ShareModel from '@/components/ShareModal.vue'
 
 interface Props {
   id: string | number
@@ -96,7 +118,7 @@ const picture = ref<API.PictureVO>({})
 const fetchPictureDetail = async () => {
   try {
     const res = await getPictureVoByIdUsingGet({
-      id: props.id
+      id: props.id,
     })
     if (res.data.code === 0 && res.data.data) {
       picture.value = res.data.data
@@ -115,7 +137,7 @@ onMounted(() => {
 const loginUserStore = useLoginUserStore()
 // 是否具有编辑权限
 const canEdit = computed(() => {
-  const loginUser = loginUserStore.loginUser;
+  const loginUser = loginUserStore.loginUser
   // 未登录不可编辑
   if (!loginUser.id) {
     return false
@@ -132,8 +154,8 @@ const doEdit = () => {
     path: '/add_picture',
     query: {
       id: picture.value.id,
-      spaceId: picture.value.spaceId
-    }
+      spaceId: picture.value.spaceId,
+    },
   })
 }
 // 删除
@@ -155,12 +177,20 @@ const doDownload = () => {
   downloadImage(picture.value.url)
 }
 
+// ------ 分享操作 ------
+const shareModalRef = ref()
+// 分享链接
+const shareLink = ref<string>()
+// 分享
+const doShare = () => {
+  shareLink.value = `${window.location.protocol}//${window.location.host}/picture/${picture.value.id}`
+  if (shareModalRef.value) {
+    shareModalRef.value.openModal()
+  }
+}
 </script>
 
 <style scoped>
 #pictureDetailPage {
-
 }
-
 </style>
-

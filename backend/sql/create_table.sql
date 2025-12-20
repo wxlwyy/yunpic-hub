@@ -82,6 +82,10 @@ ALTER TABLE picture
 -- 创建索引
 CREATE INDEX idx_spaceId ON picture (spaceId);
 
+-- 新增 picColor 字段（存储16进制颜色值，如#FF0000，长度设10足够）
+ALTER TABLE picture
+    ADD COLUMN picColor VARCHAR(16) NULL COMMENT '图片主色调（16进制RGB值，如#FF0000）'
+
 
 -- 空间表
 create table if not exists space

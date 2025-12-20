@@ -63,7 +63,7 @@ public abstract class UploadPictureTemplate {
                 if (objectList.size() > 1) {
                     thumbnailPicObject = objectList.get(1);
                 }
-                return getUploadPictureResult(originFilename, compressPicObject, thumbnailPicObject);
+                return getUploadPictureResult(originFilename, compressPicObject, thumbnailPicObject, imageInfo);
             }
             return getUploadPictureResult(originFilename, tempFile, uploadPath, imageInfo);
         } catch (Exception e) {
@@ -95,6 +95,7 @@ public abstract class UploadPictureTemplate {
      * @param tempFile
      */
     protected abstract void processTempFile(Object inputSource, File tempFile) throws Exception;
+
     /**
      * 封装返回结果
      * @param originFilename
@@ -103,7 +104,6 @@ public abstract class UploadPictureTemplate {
      * @param imageInfo
      * @return
      */
-
     private UploadPictureResult getUploadPictureResult(String originFilename, File tempFile, String uploadPath, ImageInfo imageInfo) {
         int width = imageInfo.getWidth();
         int height = imageInfo.getHeight();
@@ -118,10 +118,11 @@ public abstract class UploadPictureTemplate {
         uploadPictureResult.setPicScale(picScale);
         uploadPictureResult.setPicSize(FileUtil.size(tempFile));
         uploadPictureResult.setUrl("https://" + cosClientConfig.getHost() + "/" + uploadPath);
+        uploadPictureResult.setPicColor(imageInfo.getAve());
         return uploadPictureResult;
     }
 
-    private UploadPictureResult getUploadPictureResult(String originFilename, CIObject compressPicObject, CIObject thumbnailPicObject) {
+    private UploadPictureResult getUploadPictureResult(String originFilename, CIObject compressPicObject, CIObject thumbnailPicObject, ImageInfo imageInfo) {
         int width = compressPicObject.getWidth();
         int height = compressPicObject.getHeight();
         double picScale = NumberUtil.round((width * 1.0 / height), 2).doubleValue();
@@ -134,6 +135,7 @@ public abstract class UploadPictureTemplate {
         uploadPictureResult.setPicName(FileUtil.mainName(originFilename));
         uploadPictureResult.setPicScale(picScale);
         uploadPictureResult.setPicSize(compressPicObject.getSize().longValue());
+        uploadPictureResult.setPicColor(imageInfo.getAve());
         uploadPictureResult.setUrl("https://" + cosClientConfig.getHost() + "/" + compressPicObject.getKey());
         uploadPictureResult.setThumbnailUrl("https://" + cosClientConfig.getHost() + "/" + thumbnailPicObject.getKey());
         return uploadPictureResult;

@@ -1,5 +1,5 @@
 <template>
-  <div id="globalHeader">
+  <div class="globalHeader">
     <a-row :wrap="false">
       <a-col flex="200px">
         <router-link to="/">
