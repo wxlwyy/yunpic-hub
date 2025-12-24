@@ -9,6 +9,9 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.wyy.yunpicturebackend.api.aliyunai.ALiYunAiApi;
+import com.wyy.yunpicturebackend.api.aliyunai.model.CreateOutPaintingTaskRequest;
+import com.wyy.yunpicturebackend.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.exception.ThrowUtils;
@@ -74,6 +77,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private TransactionTemplate transactionTemplate;
+
+    @Resource
+    private ALiYunAiApi aLiYunAiApi;
 
     /**
      * 上传或替换图片
@@ -670,6 +676,28 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         return sortedPictureList.stream()
                 .map(PictureVO::objToVo)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 创建AI扩图任务
+     * @param createPictureOutPaintingTaskRequest
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser) {
+        CreateOutPaintingTaskRequest request = new CreateOutPaintingTaskRequest;
+        CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();
+        Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
+        Picture picture = getById(pictureId);
+        ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
+        //校验权限
+        checkPictureAuth(loginUser, picture);
+        input.setImageUrl(picture.getUrl());
+        request.setInput(input);
+        BeanUtil.copyProperties(createPictureOutPaintingTaskRequest, request);
+        CreateOutPaintingTaskResponse response = aLiYunAiApi.createOutPaintingTask(request);
+        return response;
     }
 }
 
