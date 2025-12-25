@@ -51,7 +51,7 @@ public abstract class UploadPictureTemplate {
         //通过本地图片上传
         File tempFile = null;
         try {
-            tempFile = File.createTempFile(uploadPath, null);
+            tempFile = File.createTempFile("upload_", null);
             // todo
             processTempFile(inputSource, tempFile);
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, tempFile);

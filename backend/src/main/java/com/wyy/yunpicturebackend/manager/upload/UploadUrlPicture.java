@@ -66,9 +66,18 @@ public class UploadUrlPicture extends UploadPictureTemplate{
         }
     }
 
+    /**
+     * 通过图片url获取原名
+     * @param inputSource
+     * @return
+     */
     @Override
     protected String getOriginFilename(Object inputSource) {
         String fileUrl = (String) inputSource;
+        int questionMarkIndex = fileUrl.indexOf("?");
+        if (questionMarkIndex > -1) {
+            fileUrl = fileUrl.substring(0, questionMarkIndex);
+        }
         return FileUtil.getName(fileUrl);
     }
 

@@ -686,7 +686,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      */
     @Override
     public CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser) {
-        CreateOutPaintingTaskRequest request = new CreateOutPaintingTaskRequest;
+        CreateOutPaintingTaskRequest request = new CreateOutPaintingTaskRequest();
         CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();
         Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
         Picture picture = getById(pictureId);
