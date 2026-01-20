@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
+
 @RestController
 @RequestMapping("/space")
 public class SpaceController {
@@ -68,9 +70,10 @@ public class SpaceController {
         ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
         //是本人或管理员
         User user = userService.getLoginUser(request);
-        if (!(oldSpace.getUserId().equals(user.getId()) || userService.isAdmin(user))){
+        spaceService.checkSpaceAuth(user, oldSpace);
+        /*if (!(oldSpace.getUserId().equals(user.getId()) || userService.isAdmin(user))){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        }*/
         //删除
         boolean success = spaceService.removeById(spaceId);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR, "删除失败");
@@ -134,9 +137,10 @@ public class SpaceController {
         spaceService.validSpace(space, false);
         //是否为本人或管理员
         User loginUser = userService.getLoginUser(request);
-        if (!(oldSpace.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser)) ){
+        spaceService.checkSpaceAuth(loginUser, oldSpace);
+        /*if (!(oldSpace.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser)) ){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        }*/
         //更新信息
         boolean success = spaceService.updateById(space);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
