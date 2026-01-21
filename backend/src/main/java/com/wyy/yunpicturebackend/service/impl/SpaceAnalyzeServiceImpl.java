@@ -81,6 +81,7 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
         Long spaceId = spaceAnalyzeRequest.getSpaceId();
         if (spaceId != null) {
             queryWrapper.eq("spaceId", spaceId);
+            return;
         }
         throw new BusinessException(ErrorCode.PARAMS_ERROR, "未指定查询范围");
     }
@@ -169,7 +170,7 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
                 .map(map -> {
                     String category = (String) map.get("category");
                     Long totalCount = (Long) map.get("totalCount");
-                    Long totalSize = (Long) map.get("totalSize");
+                    Long totalSize = ((Number) map.get("totalSize")).longValue();
                     SpaceCategoryAnalyzeResponse spaceCategoryAnalyzeResponse = new SpaceCategoryAnalyzeResponse(category, totalCount, totalSize);
                     return spaceCategoryAnalyzeResponse;
                 })
@@ -260,19 +261,21 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
         ThrowUtils.throwIf(StrUtil.isBlank(timeDimension), ErrorCode.PARAMS_ERROR, "时间维度不能为空");
         // 校验权限（仅管理员或本人可操作）
         checkSpaceAnalyzeAuth(spaceUserAnalyzeRequest, loginUser);
-        // 补充查询范围
+        // 补充查询范围和用户id
         QueryWrapper<Picture> pictureQueryWrapper = new QueryWrapper<>();
         fillSpaceAnalyzeQueryWrapper(spaceUserAnalyzeRequest, pictureQueryWrapper);
+        Long userId = spaceUserAnalyzeRequest.getUserId();
+        pictureQueryWrapper.eq(ObjUtil.isNotNull(userId), "userId", userId);
         // 按时间维度查询
         switch (timeDimension) {
             case "day":
-                pictureQueryWrapper.select("DATE_FORMAT(create_time, '%Y_%m_%d) as period", "COUNT(*) as count");
+                pictureQueryWrapper.select("DATE_FORMAT(createTime, '%Y_%m_%d') as period", "COUNT(*) as count");
                 break;
             case "week":
-                pictureQueryWrapper.select("YEARWEEK(create_time) as period", "COUNT(*) as count");
+                pictureQueryWrapper.select("YEARWEEK(createTime) as period", "COUNT(*) as count");
                 break;
             case "month":
-                pictureQueryWrapper.select("DATE_FORMAT(create_time, '%Y_%m) as period", "COUNT(*) as count");
+                pictureQueryWrapper.select("DATE_FORMAT(createTime, '%Y_%m') as period", "COUNT(*) as count");
                 break;
             default:
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持该时间维度");
@@ -283,8 +286,8 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
         List<Map<String, Object>> periodMaps = pictureService.getBaseMapper().selectMaps(pictureQueryWrapper);
         List<SpaceUserAnalyzeResponse> spaceUserAnalyzeResponses = periodMaps.stream()
                 .map(periodMap -> {
-                    String period = (String) periodMap.get("period");
-                    Long count = (Long) periodMap.get("count");
+                    String period = periodMap.get("period").toString();
+                    Long count = ((Number) periodMap.get("count")).longValue();
                     return new SpaceUserAnalyzeResponse(period, count);
                 })
                 .collect(Collectors.toList());
@@ -305,9 +308,9 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
         ThrowUtils.throwIf(!userService.isAdmin(loginUser), ErrorCode.NO_AUTH_ERROR);
         // 查询前N个空间
         QueryWrapper<Space> spaceQueryWrapper = new QueryWrapper<>();
-        spaceQueryWrapper.select("id", "totalSize")
+        spaceQueryWrapper.select("id", "spaceName", "totalSize")
                 .orderByDesc("totalSize")
-                .last("limit" + spaceRankAnalyzeRequest.getTopN());
+                .last("limit " + spaceRankAnalyzeRequest.getTopN());
         List<Space> spaceList = spaceService.list(spaceQueryWrapper);
         return spaceList;
     }
