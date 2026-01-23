@@ -103,7 +103,7 @@ public class SpaceController {
         Space oldSpace = spaceService.getById(spaceId);
         ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
         //详细校验
-        spaceService.validSpace(space, false);
+        spaceService.validateSpaceParams(space, false);
         //补充审核参数
         User loginUser = userService.getLoginUser(request);
         //更新
@@ -134,7 +134,7 @@ public class SpaceController {
         //自动填充数据
         spaceService.fillSpaceBySpaceLevel(space);
         //详细校验
-        spaceService.validSpace(space, false);
+        spaceService.validateSpaceParams(space, false);
         //是否为本人或管理员
         User loginUser = userService.getLoginUser(request);
         spaceService.checkSpaceAuth(loginUser, oldSpace);
@@ -213,7 +213,7 @@ public class SpaceController {
      * @return
      */
     @GetMapping("/get/vo")
-    public BaseResponse<SpaceVO> getSpaceVOById(Long id){
+    public BaseResponse<SpaceVO> getSpaceVOById(Long id, HttpServletRequest request){
         //校验参数
         ThrowUtils.throwIf(id < 0, ErrorCode.PARAMS_ERROR);
         //查询
@@ -221,7 +221,7 @@ public class SpaceController {
         //是否存在
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         //封装
-        SpaceVO spaceVO = spaceService.getSpaceVO(space);
+        SpaceVO spaceVO = spaceService.getSpaceVO(space, request);
         return ResultUtils.success(spaceVO);
     }
 

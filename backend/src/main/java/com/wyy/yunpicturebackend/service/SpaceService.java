@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.vo.SpaceVO;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
 * @author wxl
 * @description 针对表【space(空间)】的数据库操作Service
@@ -21,14 +23,14 @@ public interface SpaceService extends IService<Space> {
      * @param space
      * @param add 是否是创建空间
      */
-    void validSpace(Space space, boolean add);
+    void validateSpaceParams(Space space, boolean add);
 
     /**
      * 获取空间包装类（主要是给userVO赋值）
      * @param space
      * @return
      */
-    SpaceVO getSpaceVO(Space space);
+    SpaceVO getSpaceVO(Space space, HttpServletRequest request);
 
     /**
      * 获取空间包装类（分页）
