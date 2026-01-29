@@ -11,6 +11,7 @@ import com.wyy.yunpicturebackend.constant.UserConstant;
 import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.exception.ThrowUtils;
+import com.wyy.yunpicturebackend.manager.auth.StpKit;
 import com.wyy.yunpicturebackend.model.dto.user.QueryUserRequest;
 import com.wyy.yunpicturebackend.model.dto.user.UserLoginRequest;
 import com.wyy.yunpicturebackend.model.dto.user.UserRegisterRequest;
@@ -104,8 +105,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         userQueryWrapper.eq("userPassword", encryptPassword);
         User user = baseMapper.selectOne(userQueryWrapper);
         ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR, "用户名或密码错误");
-        //将查出的信息存到session中
+        //将查出的信息存到session中，
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
+        // 将用户id和用户信息分别存到sa-token中，
+        StpKit.SPACE.login(user.getId());
+        StpKit.SPACE.getSession().set(UserConstant.USER_LOGIN_STATE, user);
         //返回脱敏信息
         return getLoginUserVO(user);
 
@@ -125,7 +129,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
-     * 获取当前登录的用户
+     * 通过cookie中的sessionId从session中获取当前登录的用户信息
      * @param request 请求对象
      * @return 用户对象
      */

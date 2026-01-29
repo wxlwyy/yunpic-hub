@@ -1,54 +1,77 @@
-#应用程序的端口号和跟路径
-server:
+server:  #应用程序的端口号和跟路径
   port: 8080
   servlet:
     context-path: /api
     session:
-      # 设置cookie
-      cookie:
+      cookie:  # 设置cookie
         max-age: 2592000
-#应用名称
-spring:
+
+spring:  #应用名称
   application:
     name: yun-picture-backend
-  #文件大小配置
-  servlet:
+  servlet:  #文件大小配置
     multipart:
       max-file-size: 5MB
       max-request-size: 5MB
-  #数据库配置
-  datasource:
+  datasource:  # 数据库配置
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/yun_picture
     password: 123456
-    username: root #这里一定要注意不是name（数据源名称）而是username！！！
-  # Redis 配置
-  redis:
+    username: root  #这里一定要注意不是name（数据源名称）而是username！！！
+  redis:  # Redis 配置
     database: 0
     host: 127.0.0.1
     port: 6379
     timeout: 5000
     password: 123456
-  # session配置
-  session:
+    lettuce:
+      pool:
+        max-active: 200  # 最大连接数（根据并发量调整，比如设为 Tomcat 线程数一致）
+        max-idle: 50     # 最大空闲（保留一些连接备用）
+        min-idle: 10     # 最小空闲（防止系统闲置时连接全被释放，请求来了还得重建）
+        max-wait: 10000  # 获取连接最大等待 10秒
+  session:  # session配置
     store-type: redis
     timeout: 2592000
-#mybatisplus配置
-mybatis-plus:
+  shardingsphere: # 空间图片分表
+    datasource:
+      names: yun_picture
+      yun_picture:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/yun_picture?allowPublicKeyRetrieval=true
+        username: root
+        password: 123456
+    rules:
+      sharding:
+        tables:
+          picture: # 逻辑表名（代表picture_1,picture_2,picture_3等等“这一类实际物理存在表”）
+            actual-data-nodes: yun_picture.picture  # 动态分表，真实数据节点，真实的表名由算法返回，yun_picture.picture只是告诉框架默认去哪个库找
+            table-strategy: # 分表策略
+              standard: # 标准策略（用于单分片键）
+                sharding-column: spaceId  # 分片键，核心：只看 spaceId 这个字段
+                sharding-algorithm-name: picture_sharding_algorithm  # 使用自定义分片算法，交给那个自定义算法处理
+        sharding-algorithms:
+          picture_sharding_algorithm:
+            type: CLASS_BASED  # 基于类的自定义算法
+            props:
+              strategy: standard
+              algorithmClassName: com.wyy.yunpicturebackend.manager.sharding.PictureShardingAlgorithm
+    props:
+      sql-show: true  # 打印实际的sql（生产环境不要开）
+
+mybatis-plus:  #mybatisplus配置
   configuration:
-    #关闭下划线转驼峰功能
-    map-underscore-to-camel-case: false
-    #打印sql日志（只在开发环境开启）
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  #全局逻辑删除配置
-  global-config:
+    map-underscore-to-camel-case: false  #关闭下划线转驼峰功能
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  #打印sql日志（只在开发环境开启）
+  global-config:  #全局逻辑删除配置
     db-config:
       logic-delete-field: isDelete # 全局逻辑删除字段名
       logic-delete-value: 1 # 逻辑已删除值。可选，默认值为 1
       logic-not-delete-value: 0 # 逻辑未删除值。可选，默认值为 0
+    enable-sql-runner: true
 
-#接口文档配置
-knife4j:
+knife4j:  #接口文档配置，默认地址：http://localhost:8080/api/doc.html
   enable: true
   openapi:
     title: 智能协同云图库接口文档

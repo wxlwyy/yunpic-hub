@@ -15,7 +15,7 @@ public class UpdatePictureRequest implements Serializable {
     private static final long serialVersionUID = 63369654311691699L;
 
     /**
-     * id
+     * 图片id
      */
     private Long id;
 

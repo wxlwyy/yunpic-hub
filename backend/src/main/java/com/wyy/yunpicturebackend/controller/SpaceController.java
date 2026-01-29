@@ -13,6 +13,7 @@ import com.wyy.yunpicturebackend.constant.UserConstant;
 import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.exception.ThrowUtils;
+import com.wyy.yunpicturebackend.manager.auth.SpaceUserAuthManager;
 import com.wyy.yunpicturebackend.model.dto.space.*;
 import com.wyy.yunpicturebackend.model.entity.Space;
 import com.wyy.yunpicturebackend.model.entity.User;
@@ -42,6 +43,9 @@ public class SpaceController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private SpaceUserAuthManager spaceUserAuthManager;
 
     @PostMapping("/add")
     public BaseResponse<Long> addSpace(@RequestBody AddSpaceRequest addSpaceRequest, HttpServletRequest request){
@@ -222,6 +226,10 @@ public class SpaceController {
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         //封装
         SpaceVO spaceVO = spaceService.getSpaceVO(space, request);
+        // 获取空间详情时返回给前端权限列表，方便展示是否显示相关按钮
+        User loginUser = userService.getLoginUser(request);
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+        spaceVO.setPermissionList(permissionList);
         return ResultUtils.success(spaceVO);
     }
 

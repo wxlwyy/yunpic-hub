@@ -288,8 +288,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //查询图片是否存在
         Picture oldPicture = getById(pictureId);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
-        //空间权限校验
-        checkPictureAuth(loginUser, oldPicture);
+        //空间权限校验，已经改为使用sa-token注解鉴权
+//        checkPictureAuth(loginUser, oldPicture);
         //开启事务
         Long finalSpaceId = oldPicture.getSpaceId();
         transactionTemplate.execute(status -> {
@@ -328,8 +328,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setTags(JSONUtil.toJsonStr(editPictureRequest.getTags()));
         //详细校验
         validPicture(picture);
-        //空间权限校验
-        checkPictureAuth(loginUser, oldPicture);
+        //空间权限校验，已经改为使用sa-token注解鉴权
+//        checkPictureAuth(loginUser, oldPicture);
         //补充审核参数
         fillPictureReviewParams(picture, loginUser);
         //操作数据库更新信息
@@ -405,7 +405,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     }
 
     /**
-     * 对某个图片操作的空间权限校验
+     * 校验对不同空间的某个图片的操作权限
      * @param loginUser
      * @param picture
      */
@@ -691,8 +691,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
         Picture picture = getById(pictureId);
         ThrowUtils.throwIf(picture == null, ErrorCode.NOT_FOUND_ERROR);
-        //校验权限
-        checkPictureAuth(loginUser, picture);
+        //校验权限，已经改为使用sa-token注解鉴权
+//        checkPictureAuth(loginUser, picture);
         input.setImageUrl(picture.getUrl());
         request.setInput(input);
         BeanUtil.copyProperties(createPictureOutPaintingTaskRequest, request);

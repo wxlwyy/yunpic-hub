@@ -8,6 +8,7 @@ import com.wyy.yunpicturebackend.model.entity.Space;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -84,6 +85,11 @@ public class SpaceVO implements Serializable {
      * 创建改图片的用户信息
      */
     private UserVO userVO;
+
+    /**
+     * 权限列表
+     */
+    private List<String> permissionList = new ArrayList<>();
 
     /**
      * 将封装类转为对象

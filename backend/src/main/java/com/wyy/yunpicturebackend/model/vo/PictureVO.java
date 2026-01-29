@@ -10,6 +10,7 @@ import com.wyy.yunpicturebackend.model.entity.Picture;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -113,9 +114,14 @@ public class PictureVO implements Serializable {
 
 
     /**
-     * 创建改图片的用户信息
+     * 上传该图片的用户信息
      */
     private UserVO userVO;
+
+    /**
+     * 权限列表
+     */
+    private List<String> permissionList = new ArrayList<>();
 
     /**
      * 将封装类转为对象

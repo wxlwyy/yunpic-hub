@@ -11,6 +11,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.exception.ThrowUtils;
+import com.wyy.yunpicturebackend.manager.sharding.DynamicShardingManager;
 import com.wyy.yunpicturebackend.model.dto.space.AddSpaceRequest;
 import com.wyy.yunpicturebackend.model.dto.space.QuerySpaceRequest;
 import com.wyy.yunpicturebackend.model.entity.Picture;
@@ -27,6 +28,7 @@ import com.wyy.yunpicturebackend.service.SpaceService;
 import com.wyy.yunpicturebackend.mapper.SpaceMapper;
 import com.wyy.yunpicturebackend.service.SpaceUserService;
 import com.wyy.yunpicturebackend.service.UserService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -56,6 +58,10 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
 
     @Resource
     private TransactionTemplate transactionTemplate;
+
+    /*@Resource
+    @Lazy
+    private DynamicShardingManager dynamicShardingManager;*/
 
     /**
      * 创建空间、修改空间时校验参数的合法性
@@ -242,6 +248,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
                     success = spaceUserService.save(spaceUser);
                     ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR, "创建团队成员记录失败");
                 }
+                // 为旗舰版团队空间创建分表（目前不用分表功能）
+                // dynamicShardingManager.createSpacePictureTable(space);
                 return space.getId();
             });
             return Optional.ofNullable(newSpaceId).orElse(-1L);

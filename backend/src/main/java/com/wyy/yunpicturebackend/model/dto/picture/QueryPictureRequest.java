@@ -20,6 +20,7 @@ import java.util.List;
 public class QueryPictureRequest extends PageRequest implements Serializable {
 
     private static final long serialVersionUID = 9169681866426519625L;
+
     /**
      * 主键
      */

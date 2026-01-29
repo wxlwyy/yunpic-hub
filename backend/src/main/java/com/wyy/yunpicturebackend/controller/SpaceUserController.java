@@ -13,6 +13,8 @@ import com.wyy.yunpicturebackend.constant.UserConstant;
 import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.exception.ThrowUtils;
+import com.wyy.yunpicturebackend.manager.auth.annotation.SaSpaceCheckPermission;
+import com.wyy.yunpicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.wyy.yunpicturebackend.model.dto.space.*;
 import com.wyy.yunpicturebackend.model.dto.spaceuser.SpaceUserAddRequest;
 import com.wyy.yunpicturebackend.model.dto.spaceuser.SpaceUserEditRequest;
@@ -54,6 +56,7 @@ public class SpaceUserController {
      * @return
      */
     @PostMapping("/add")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Long> addSpaceUser(@RequestBody SpaceUserAddRequest spaceUserAddRequest){
         //校验基本参数
         ThrowUtils.throwIf(ObjUtil.isNull(spaceUserAddRequest), ErrorCode.PARAMS_ERROR);
@@ -67,6 +70,7 @@ public class SpaceUserController {
      * @return
      */
     @PostMapping("/delete")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> deleteSpaceUser(@RequestBody DeleteRequest deleteRequest){
         //校验基本参数及合法性
         Long id = deleteRequest.getId();
@@ -88,6 +92,7 @@ public class SpaceUserController {
      * @return
      */
     @PostMapping("/edit")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<Boolean> editSpaceUser(@RequestBody SpaceUserEditRequest spaceUserEditRequest){
         //校验基本参数及合法性
         Long id = spaceUserEditRequest.getId();
@@ -109,11 +114,12 @@ public class SpaceUserController {
     }
 
     /**
-     * 查询所有空间成员信息
+     * 根据查询条件查询所有空间成员信息
      * @param spaceUserQueryRequest
      * @return
      */
     @PostMapping("/list")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<List<SpaceUserVO>> listSpaceUserVO(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest){
         // 校验基本参数
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorCode.PARAMS_ERROR);
@@ -132,6 +138,7 @@ public class SpaceUserController {
      * @return
      */
     @PostMapping("/get")
+    @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.SPACE_USER_MANAGE)
     public BaseResponse<SpaceUser> getSpaceUser(@RequestBody SpaceUserQueryRequest spaceUserQueryRequest) {
         // 校验基本参数
         ThrowUtils.throwIf(spaceUserQueryRequest == null, ErrorCode.PARAMS_ERROR);
@@ -148,7 +155,7 @@ public class SpaceUserController {
     }
 
     /**
-     * 查询我加入的团队空间列表
+     * 查询我加入的某个或多个团队空间列表
      */
     @PostMapping("/list/my")
     public BaseResponse<List<SpaceUserVO>> listMyTeamSpace(HttpServletRequest request) {
