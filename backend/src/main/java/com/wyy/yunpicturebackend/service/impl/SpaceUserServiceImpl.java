@@ -164,13 +164,13 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
         spaceUserVOList.forEach(spaceUserVO -> {
             Long userId = spaceUserVO.getUserId();
             Long spaceId = spaceUserVO.getSpaceId();
-            if (spaceIdSpaceListMap.containsKey(userId)) {
-                Space space = spaceIdSpaceListMap.get(userId).get(0);
+            if (spaceIdSpaceListMap.containsKey(spaceId)) {
+                Space space = spaceIdSpaceListMap.get(spaceId).get(0);
                 SpaceVO spaceVO = SpaceVO.objToVo(space);
                 spaceUserVO.setSpaceVO(spaceVO);
             }
-            if (userIdUserListMap.containsKey(spaceId)) {
-                User user = userIdUserListMap.get(spaceId).get(0);
+            if (userIdUserListMap.containsKey(userId)) {
+                User user = userIdUserListMap.get(userId).get(0);
                 UserVO userVO = userService.getUserVO(user);
                 spaceUserVO.setUserVO(userVO);
             }

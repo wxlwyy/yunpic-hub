@@ -96,11 +96,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (spaceId != null) {
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(ObjUtil.isEmpty(space), ErrorCode.NOT_FOUND_ERROR);
-            //判断是否是空间管理员
+            // 改为统一使用satoken权限校验
+/*            //判断是否是空间管理员
             Long userId = space.getUserId();
             if (!loginUser.getId().equals(userId)) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "没有空间权限");
-            }
+            }*/
             //校验额度
             if (space.getTotalCount() >= space.getMaxCount()) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "空间容纳的图片总数量不足");
@@ -114,16 +115,17 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (uploadPictureRequest != null) {
             pictureId = uploadPictureRequest.getId();
         }
-        //如果是替换图片查看是否存在这个图片
+        //如果是上传图片时替换图片查看是否存在这个图片
         if (pictureId != null) {
             //boolean exists = lambdaQuery().eq(Picture::getId, pictureId).exists();
             //ThrowUtils.throwIf(!exists, ErrorCode.PARAMS_ERROR, "图片不存在");
             //修改图片需要本人或管理员
             Picture oldPicture = getById(pictureId);
             ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
-            if (!(oldPicture.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser))){
+            // 改为统一使用satoken权限校验
+/*            if (!(oldPicture.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser))){
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-            }
+            }*/
             // 防止替换图片时修改图片的空间id，因为之前的图片的空间属性已经固定，不能修改
             // 防止用户把【私人/团队空间】的图片 -> 转移到 -> 【公共空间】
             // 逻辑：如果你没传 spaceId，我就强制给你塞回原来的 spaceId，不让你变空。
@@ -140,7 +142,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 }
             }
         }
-        //设置相应的图片存放目录
+        //设置相应的图片存放在云存储中的目录
         String uploadPicturePrefix;
         if (spaceId == null) {
             uploadPicturePrefix = String.format("public/%s", loginUser.getId());

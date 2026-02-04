@@ -77,7 +77,7 @@
                 <EditOutlined />
               </template>
             </a-button>
-            <a-button v-if="canEdit" danger @click="doDelete">
+            <a-button v-if="canDelete" danger @click="doDelete">
               删除
               <template #icon>
                 <DeleteOutlined />
@@ -106,6 +106,7 @@ import { downloadImage, formatSize, toHexColor } from '../utils'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
 import { DeleteOutlined, EditOutlined, DownloadOutlined, ShareAltOutlined} from '@ant-design/icons-vue';
 import ShareModel from '@/components/ShareModal.vue'
+import { SPACE_PERMISSION_ENUM } from '@/constants/space.ts'
 
 interface Props {
   id: string | number
@@ -134,7 +135,18 @@ onMounted(() => {
   fetchPictureDetail()
 })
 
-const loginUserStore = useLoginUserStore()
+// 通用权限检查函数
+function createPermissionChecker(permission: string) {
+  return computed(() => {
+    return (picture.value.permissionList ?? []).includes(permission)
+  })
+}
+
+// 定义权限检查
+const canEdit = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_EDIT)
+const canDelete = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_DELETE)
+
+/*const loginUserStore = useLoginUserStore()
 // 是否具有编辑权限
 const canEdit = computed(() => {
   const loginUser = loginUserStore.loginUser
@@ -145,7 +157,7 @@ const canEdit = computed(() => {
   // 仅本人或管理员可编辑
   const user = picture.value.userVO || {}
   return loginUser.id === user.id || loginUser.userRole === 'admin'
-})
+})*/
 
 const router = useRouter()
 // 编辑
