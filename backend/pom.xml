@@ -42,6 +42,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
         </dependency>
+        <!-- websocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
         <!-- 本地缓存 Caffeine -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
