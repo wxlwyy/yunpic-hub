@@ -4,6 +4,7 @@ import cn.hutool.core.util.ObjUtil;
 import cn.hutool.json.JSONUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.wyy.yunpicturebackend.manager.websocket.disruptor.PictureEditEventProducer;
 import com.wyy.yunpicturebackend.manager.websocket.model.PictureEditActionEnum;
 import com.wyy.yunpicturebackend.manager.websocket.model.PictureEditMessageTypeEnum;
 import com.wyy.yunpicturebackend.manager.websocket.model.PictureEditRequestMessage;
@@ -32,6 +33,9 @@ public class PictureEditHandler extends TextWebSocketHandler {
 
     @Resource
     private ObjectMapper objectMapper;
+
+    @Resource
+    private PictureEditEventProducer pictureEditEventProducer;
 
     // 正在编辑图片的用户，存储图片id和用户id
     private final Map<Long, Long> editingPictureUsers = new ConcurrentHashMap<>();
@@ -113,7 +117,8 @@ public class PictureEditHandler extends TextWebSocketHandler {
         Map<String, Object> attributes = session.getAttributes();
         Long pictureId = (Long) attributes.get("pictureId");
         User user = (User) attributes.get("user");
-        // 根据消息类型，执行不同的处理方法
+        pictureEditEventProducer.publishEvent(pictureEditRequestMessage, session, pictureId, user);
+        /*// 根据消息类型，执行不同的处理方法
         switch (pictureEditMessageTypeEnum) {
             case ENTER_EDIT:
                 handleEnterEditMessage(pictureEditRequestMessage, session, pictureId, user);
@@ -132,7 +137,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
                 String pictureEditResponseMessageJson = objectMapper.writeValueAsString(pictureEditResponseMessage);
                 TextMessage textMessage = new TextMessage(pictureEditResponseMessageJson);
                 session.sendMessage(textMessage);
-        }
+        }*/
 
     }
 
@@ -143,7 +148,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
      * @param pictureId
      * @param user
      */
-    private void handleEnterEditMessage(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session,
+    public void handleEnterEditMessage(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session,
                                         Long pictureId, User user) throws IOException {
         // 没有用户正在编辑，才可进入编辑状态
         if (!editingPictureUsers.containsKey(pictureId)) {
@@ -166,7 +171,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
      * @param pictureId
      * @param user
      */
-    private void handleEditActionMessage(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session,
+    public void handleEditActionMessage(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session,
                                          Long pictureId, User user) throws IOException {
         // 确定当前用户是编辑者（当前图片id对应的是当前用户）
         Long userId = user.getId();
@@ -200,7 +205,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
      * @param pictureId
      * @param user
      */
-    private void handleExitEditMessage(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session,
+    public void handleExitEditMessage(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session,
                                        Long pictureId, User user) throws IOException {
         Long editingPictureUserId = editingPictureUsers.get(pictureId);
         // 查看editingPictureUsers，且是否是当前用户
@@ -218,7 +223,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
     }
 
     /**
-     * WebS؜ocket 连接关闭‌（包括但不限于：用户主动关闭、关闭/刷新网页、网络中断、浏览器崩溃），移除当前用户的编辑状态、并且从集合中删‌除当前会话
+     * Websocket 连接关闭‌（包括但不限于：用户主动关闭、关闭/刷新网页、网络中断、浏览器崩溃），移除当前用户的编辑状态、并且从集合中删‌除当前会话
      * @param session
      * @param status
      * @throws Exception
