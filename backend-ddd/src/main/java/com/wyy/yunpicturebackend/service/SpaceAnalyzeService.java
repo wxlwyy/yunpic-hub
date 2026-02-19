@@ -3,7 +3,7 @@ package com.wyy.yunpicturebackend.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.wyy.yunpicturebackend.model.dto.space.analyze.*;
 import com.wyy.yunpicturebackend.model.entity.Space;
-import com.wyy.yunpicturebackend.model.entity.User;
+import com.wyy.yunpicture.domain.user.entity.User;
 import com.wyy.yunpicturebackend.model.vo.analyze.*;
 
 import java.util.List;

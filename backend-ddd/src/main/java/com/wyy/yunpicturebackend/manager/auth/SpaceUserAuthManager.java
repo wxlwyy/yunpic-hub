@@ -8,12 +8,11 @@ import com.wyy.yunpicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.wyy.yunpicturebackend.manager.auth.model.SpaceUserRole;
 import com.wyy.yunpicturebackend.model.entity.Space;
 import com.wyy.yunpicturebackend.model.entity.SpaceUser;
-import com.wyy.yunpicturebackend.model.entity.User;
+import com.wyy.yunpicture.domain.user.entity.User;
 import com.wyy.yunpicturebackend.model.enums.SpaceRoleEnum;
 import com.wyy.yunpicturebackend.model.enums.SpaceTypeEnum;
-import com.wyy.yunpicturebackend.service.SpaceService;
 import com.wyy.yunpicturebackend.service.SpaceUserService;
-import com.wyy.yunpicturebackend.service.UserService;
+import com.wyy.yunpicture.application.service.UserApplicationService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -28,7 +27,7 @@ import java.util.List;
 public class SpaceUserAuthManager {
 
     @Resource
-    private UserService userService;
+    private UserApplicationService userApplicationService;
 
     @Resource
     private SpaceUserService spaceUserService;
@@ -74,7 +73,7 @@ public class SpaceUserAuthManager {
         List<String> ADMIN_PERMISSIONS = getPermissionKeyListByRoleKey(SpaceRoleEnum.ADMIN.getValue());
         // 公共图库（登录后）
         if (space == null) {
-            if (userService.isAdmin(loginUser)) {
+            if (userApplicationService.isAdmin(loginUser)) {
                 return ADMIN_PERMISSIONS;
             }
             return Collections.singletonList(SpaceUserPermissionConstant.PICTURE_VIEW);
@@ -87,7 +86,7 @@ public class SpaceUserAuthManager {
         switch (spaceTypeEnum) {
             case PRIVATE:
                 // 私有空间，仅本人或管理员有所有权限
-                if (space.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser)) {
+                if (space.getUserId().equals(loginUser.getId()) || userApplicationService.isAdmin(loginUser)) {
                     return ADMIN_PERMISSIONS;
                 } else {
                     return new ArrayList<>();

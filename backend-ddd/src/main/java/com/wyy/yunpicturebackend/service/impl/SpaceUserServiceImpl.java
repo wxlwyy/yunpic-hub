@@ -5,22 +5,22 @@ import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.wyy.yunpicturebackend.exception.BusinessException;
-import com.wyy.yunpicturebackend.exception.ErrorCode;
-import com.wyy.yunpicturebackend.exception.ThrowUtils;
+import com.wyy.yunpicture.infrastructure.exception.BusinessException;
+import com.wyy.yunpicture.infrastructure.exception.ErrorCode;
+import com.wyy.yunpicture.infrastructure.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.model.dto.spaceuser.SpaceUserAddRequest;
 import com.wyy.yunpicturebackend.model.dto.spaceuser.SpaceUserQueryRequest;
 import com.wyy.yunpicturebackend.model.entity.Space;
 import com.wyy.yunpicturebackend.model.entity.SpaceUser;
-import com.wyy.yunpicturebackend.model.entity.User;
+import com.wyy.yunpicture.domain.user.entity.User;
 import com.wyy.yunpicturebackend.model.enums.SpaceRoleEnum;
 import com.wyy.yunpicturebackend.model.vo.SpaceUserVO;
 import com.wyy.yunpicturebackend.model.vo.SpaceVO;
-import com.wyy.yunpicturebackend.model.vo.UserVO;
+import com.wyy.yunpicture.interfaces.vo.user.UserVO;
 import com.wyy.yunpicturebackend.service.SpaceService;
 import com.wyy.yunpicturebackend.service.SpaceUserService;
-import com.wyy.yunpicturebackend.mapper.SpaceUserMapper;
-import com.wyy.yunpicturebackend.service.UserService;
+import com.wyy.yunpicture.infrastructure.mapper.SpaceUserMapper;
+import com.wyy.yunpicture.application.service.UserApplicationService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
@@ -41,7 +41,7 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
     implements SpaceUserService{
 
     @Resource
-    private UserService userService;
+    private UserApplicationService userApplicationService;
 
     @Resource
     @Lazy
@@ -63,7 +63,7 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
             // 两个id必须同时存在
             ThrowUtils.throwIf(ObjUtil.hasEmpty(userId, spaceId), ErrorCode.PARAMS_ERROR);
             // 用户和空间没被逻辑删除
-            User user = userService.getById(userId);
+            User user = userApplicationService.getById(userId);
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR, "用户不存在");
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
@@ -127,8 +127,8 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
         // 关联查询用户信息
         Long userId = spaceUser.getUserId();
         if (userId != null && userId > 0) {
-            User user = userService.getById(userId);
-            UserVO userVO = userService.getUserVO(user);
+            User user = userApplicationService.getById(userId);
+            UserVO userVO = userApplicationService.getUserVO(user);
             spaceUserVO.setUserVO(userVO);
         }
         // 关联查询空间信息
@@ -157,7 +157,7 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
         Set<Long> userIdSet = spaceUserVOList.stream().map(SpaceUserVO::getUserId).collect(Collectors.toSet());
         // 查询相关的User和Space对象
         List<Space> spaceList = spaceService.listByIds(spaceIdSet);
-        List<User> userList = userService.listByIds(userIdSet);
+        List<User> userList = userApplicationService.listByIds(userIdSet);
         Map<Long, List<Space>> spaceIdSpaceListMap = spaceList.stream().collect(Collectors.groupingBy(Space::getId));
         Map<Long, List<User>> userIdUserListMap = userList.stream().collect(Collectors.groupingBy(User::getId));
         // 遍历spaceUserListVO，将User和Space对象脱敏，设置UserVO和SpaceVO的值
@@ -171,7 +171,7 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
             }
             if (userIdUserListMap.containsKey(userId)) {
                 User user = userIdUserListMap.get(userId).get(0);
-                UserVO userVO = userService.getUserVO(user);
+                UserVO userVO = userApplicationService.getUserVO(user);
                 spaceUserVO.setUserVO(userVO);
             }
         });

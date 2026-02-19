@@ -9,13 +9,14 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.wyy.yunpicturebackend.api.aliyunai.ALiYunAiApi;
-import com.wyy.yunpicturebackend.api.aliyunai.model.CreateOutPaintingTaskRequest;
-import com.wyy.yunpicturebackend.api.aliyunai.model.CreateOutPaintingTaskResponse;
-import com.wyy.yunpicturebackend.exception.BusinessException;
-import com.wyy.yunpicturebackend.exception.ErrorCode;
-import com.wyy.yunpicturebackend.exception.ThrowUtils;
-import com.wyy.yunpicturebackend.manager.COSManager;
+import com.wyy.yunpicture.application.service.UserApplicationService;
+import com.wyy.yunpicture.infrastructure.api.aliyunai.ALiYunAiApi;
+import com.wyy.yunpicture.infrastructure.api.aliyunai.model.CreateOutPaintingTaskRequest;
+import com.wyy.yunpicture.infrastructure.api.aliyunai.model.CreateOutPaintingTaskResponse;
+import com.wyy.yunpicture.infrastructure.exception.BusinessException;
+import com.wyy.yunpicture.infrastructure.exception.ErrorCode;
+import com.wyy.yunpicture.infrastructure.exception.ThrowUtils;
+import com.wyy.yunpicture.infrastructure.api.COSManager;
 import com.wyy.yunpicturebackend.manager.upload.UploadFilePicture;
 import com.wyy.yunpicturebackend.manager.upload.UploadPictureTemplate;
 import com.wyy.yunpicturebackend.manager.upload.UploadUrlPicture;
@@ -23,15 +24,14 @@ import com.wyy.yunpicturebackend.model.dto.file.UploadPictureResult;
 import com.wyy.yunpicturebackend.model.dto.picture.*;
 import com.wyy.yunpicturebackend.model.entity.Picture;
 import com.wyy.yunpicturebackend.model.entity.Space;
-import com.wyy.yunpicturebackend.model.entity.User;
+import com.wyy.yunpicture.domain.user.entity.User;
 import com.wyy.yunpicturebackend.model.enums.PictureReviewStatusEnum;
 import com.wyy.yunpicturebackend.model.vo.PictureVO;
-import com.wyy.yunpicturebackend.model.vo.UserVO;
+import com.wyy.yunpicture.interfaces.vo.user.UserVO;
 import com.wyy.yunpicturebackend.service.PictureService;
-import com.wyy.yunpicturebackend.mapper.PictureMapper;
+import com.wyy.yunpicture.infrastructure.mapper.PictureMapper;
 import com.wyy.yunpicturebackend.service.SpaceService;
-import com.wyy.yunpicturebackend.service.UserService;
-import com.wyy.yunpicturebackend.utils.ColorSimilarUtils;
+import com.wyy.yunpicture.infrastructure.utils.ColorSimilarUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -61,7 +61,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     private FileManager fileManager;*/
 
     @Resource
-    private UserService userService;
+    private UserApplicationService userApplicationService;
 
     @Resource
     private SpaceService spaceService;
@@ -123,7 +123,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             Picture oldPicture = getById(pictureId);
             ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
             // 改为统一使用satoken权限校验
-/*            if (!(oldPicture.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser))){
+/*            if (!(oldPicture.getUserId().equals(loginUser.getId()) || userApplicationService.isAdmin(loginUser))){
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
             }*/
             // 防止替换图片时修改图片的空间id，因为之前的图片的空间属性已经固定，不能修改
@@ -416,7 +416,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Long spaceId = picture.getSpaceId();
         if (spaceId == null) {
             //公共图库，仅本人或管理员操作图片
-            if (!(loginUser.getId().equals(picture.getUserId()) || userService.isAdmin(loginUser))) {
+            if (!(loginUser.getId().equals(picture.getUserId()) || userApplicationService.isAdmin(loginUser))) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
             }
         } else {
@@ -456,8 +456,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //查出图片相关的User信息
         Long userId = pictureVO.getUserId();
         if (userId != null && userId > 0) {
-            User user = userService.getById(userId);
-            UserVO userVO = userService.getUserVO(user);
+            User user = userApplicationService.getById(userId);
+            UserVO userVO = userApplicationService.getUserVO(user);
             pictureVO.setUserVO(userVO);
         }
         return pictureVO;
@@ -482,7 +482,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         List<PictureVO> pictureVOList = pictureList.stream().map(p -> PictureVO.objToVo(p)).collect(Collectors.toList());
         //关联用户信息，先查所有用户Id（放到set防止重复），用Id查出集合，用户信息绑定
         Set<Long> userIdSet = pictureList.stream().map(p -> p.getUserId()).collect(Collectors.toSet());
-        List<User> users = userService.listByIds(userIdSet);
+        List<User> users = userApplicationService.listByIds(userIdSet);
         Map<Long, List<User>> userIdUserListMap = users.stream().collect(Collectors.groupingBy(user -> user.getId()));
         //遍历包装类，将对应的Id的User信息赋值
         pictureVOList.forEach(pictureVO -> {
@@ -491,7 +491,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             if (userIdUserListMap.containsKey(userId)){
                 user = userIdUserListMap.get(userId).get(0);
             }
-            UserVO userVO = userService.getUserVO(user);
+            UserVO userVO = userApplicationService.getUserVO(user);
             pictureVO.setUserVO(userVO);
         });
         pictureVOPage.setRecords(pictureVOList);
@@ -604,7 +604,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      */
     @Override
     public void fillPictureReviewParams(Picture picture, User loginUser) {
-        if (userService.isAdmin(loginUser)){
+        if (userApplicationService.isAdmin(loginUser)){
             //管理员自动过审
             picture.setReviewerId(loginUser.getId());
             picture.setReviewTime(new Date());
@@ -624,7 +624,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     @Override
     public void clearCosPictureFile(Picture oldPicture) {
         String pictureUrl = oldPicture.getUrl();
-        Long count = userService.lambdaQuery().eq(User::getUserAvatar, pictureUrl).count();
+        Long count = userApplicationService.lambdaQuery().eq(User::getUserAvatar, pictureUrl).count();
         //如果图片存在于其他表中（这里比如说用户表），就不能删除
         if (count > 0) {
             return;

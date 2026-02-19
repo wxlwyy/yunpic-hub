@@ -1,5 +1,6 @@
 package com.wyy.yunpicturebackend.model.vo;
 
+import com.wyy.yunpicture.interfaces.vo.user.UserVO;
 import com.wyy.yunpicturebackend.model.entity.SpaceUser;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;

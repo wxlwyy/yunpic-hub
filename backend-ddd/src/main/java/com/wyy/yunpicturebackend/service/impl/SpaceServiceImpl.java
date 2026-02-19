@@ -6,29 +6,24 @@ import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.repository.IRepository;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.wyy.yunpicturebackend.exception.BusinessException;
-import com.wyy.yunpicturebackend.exception.ErrorCode;
-import com.wyy.yunpicturebackend.exception.ThrowUtils;
-import com.wyy.yunpicturebackend.manager.sharding.DynamicShardingManager;
+import com.wyy.yunpicture.application.service.UserApplicationService;
+import com.wyy.yunpicture.infrastructure.exception.BusinessException;
+import com.wyy.yunpicture.infrastructure.exception.ErrorCode;
+import com.wyy.yunpicture.infrastructure.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.model.dto.space.AddSpaceRequest;
 import com.wyy.yunpicturebackend.model.dto.space.QuerySpaceRequest;
-import com.wyy.yunpicturebackend.model.entity.Picture;
 import com.wyy.yunpicturebackend.model.entity.Space;
 import com.wyy.yunpicturebackend.model.entity.SpaceUser;
-import com.wyy.yunpicturebackend.model.entity.User;
+import com.wyy.yunpicture.domain.user.entity.User;
 import com.wyy.yunpicturebackend.model.enums.SpaceLevelEnum;
 import com.wyy.yunpicturebackend.model.enums.SpaceRoleEnum;
 import com.wyy.yunpicturebackend.model.enums.SpaceTypeEnum;
-import com.wyy.yunpicturebackend.model.vo.PictureVO;
 import com.wyy.yunpicturebackend.model.vo.SpaceVO;
-import com.wyy.yunpicturebackend.model.vo.UserVO;
+import com.wyy.yunpicture.interfaces.vo.user.UserVO;
 import com.wyy.yunpicturebackend.service.SpaceService;
-import com.wyy.yunpicturebackend.mapper.SpaceMapper;
+import com.wyy.yunpicture.infrastructure.mapper.SpaceMapper;
 import com.wyy.yunpicturebackend.service.SpaceUserService;
-import com.wyy.yunpicturebackend.service.UserService;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -51,7 +46,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
 
 
     @Resource
-    private UserService userService;
+    private UserApplicationService userApplicationService;
 
     @Resource
     private SpaceUserService spaceUserService;
@@ -102,8 +97,8 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         //查出图片相关的User信息
         Long userId = spaceVO.getUserId();
         if (userId != null && userId > 0) {
-            User user = userService.getById(userId);
-            UserVO userVO = userService.getUserVO(user);
+            User user = userApplicationService.getById(userId);
+            UserVO userVO = userApplicationService.getUserVO(user);
             spaceVO.setUserVO(userVO);
         }
         return spaceVO;
@@ -128,7 +123,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         List<SpaceVO> spaceVOList = spaceList.stream().map(p -> SpaceVO.objToVo(p)).collect(Collectors.toList());
         //关联用户信息，先查所有用户Id（放到set防止重复），用Id查出集合，用户信息绑定
         Set<Long> userIdSet = spaceList.stream().map(p -> p.getUserId()).collect(Collectors.toSet());
-        List<User> users = userService.listByIds(userIdSet);
+        List<User> users = userApplicationService.listByIds(userIdSet);
         Map<Long, List<User>> userIdUserListMap = users.stream().collect(Collectors.groupingBy(user -> user.getId()));
         //遍历包装类，将对应的Id的User信息赋值
         spaceVOList.forEach(spaceVO -> {
@@ -137,7 +132,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
             if (userIdUserListMap.containsKey(userId)){
                 user = userIdUserListMap.get(userId).get(0);
             }
-            UserVO userVO = userService.getUserVO(user);
+            UserVO userVO = userApplicationService.getUserVO(user);
             spaceVO.setUserVO(userVO);
         });
         spaceVOPage.setRecords(spaceVOList);
@@ -219,10 +214,10 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         //校验参数合法性
         validateSpaceParams(space, true);
         //校验权限（普通用户只能创建普通版，管理员可以创建任何版）
-        /*if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue() && !userService.isAdmin(loginUser)) {
+        /*if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue() && !userApplicationService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
         }*/
-        boolean isAdmin = userService.isAdmin(loginUser);
+        boolean isAdmin = userApplicationService.isAdmin(loginUser);
         if (!isAdmin) {
             if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue()) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
@@ -263,7 +258,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
      */
     @Override
     public void checkSpaceAuth(User loginUser, Space space) {
-        if (!(space.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser))){
+        if (!(space.getUserId().equals(loginUser.getId()) || userApplicationService.isAdmin(loginUser))){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
     }

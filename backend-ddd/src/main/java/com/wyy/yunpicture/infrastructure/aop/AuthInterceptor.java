@@ -1,0 +1,47 @@
+package com.wyy.yunpicture.infrastructure.aop;
+
+import com.wyy.yunpicture.infrastructure.annotation.AuthCheck;
+import com.wyy.yunpicture.infrastructure.exception.BusinessException;
+import com.wyy.yunpicture.infrastructure.exception.ErrorCode;
+import com.wyy.yunpicture.domain.user.entity.User;
+import com.wyy.yunpicture.domain.user.valueobject.UserRoleEnum;
+import com.wyy.yunpicture.application.service.UserApplicationService;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+
+@Aspect
+@Component
+public class AuthInterceptor {
+
+    @Resource
+    private UserApplicationService userApplicationService;
+
+    @Around("@annotation(authCheck)")
+    public Object doInterceptor(ProceedingJoinPoint joinPoint, AuthCheck authCheck) throws Throwable {
+        //首先得确保登录状态：获取request对象，取出当前登录状态的用户信息，和枚举类比较
+        RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
+        HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
+        User user = userApplicationService.getLoginUser(request);
+        String loginRole = user.getUserRole();
+        UserRoleEnum loginRoleEnum = UserRoleEnum.getUserRoleEnumByValue(loginRole);
+        //判断当前方法需要的角色，没有要求则直接放行
+        String mustRole = authCheck.mustRole();
+        UserRoleEnum mustRoleEnum = UserRoleEnum.getUserRoleEnumByValue(mustRole);
+        if (mustRoleEnum == null){
+            return joinPoint.proceed();
+        }
+        //当前方法所需的角色是管理员，当前登录的角色也是管理员
+        if (UserRoleEnum.ADMIN.getValue().equals(mustRole) && !UserRoleEnum.ADMIN.getValue().equals(loginRole)){
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+        return joinPoint.proceed();
+    }
+}

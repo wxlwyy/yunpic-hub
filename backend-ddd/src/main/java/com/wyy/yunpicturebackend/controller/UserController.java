@@ -2,18 +2,19 @@ package com.wyy.yunpicturebackend.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wyy.yunpicturebackend.annotation.AuthCheck;
-import com.wyy.yunpicturebackend.common.BaseResponse;
-import com.wyy.yunpicturebackend.common.DeleteRequest;
-import com.wyy.yunpicturebackend.common.ResultUtils;
-import com.wyy.yunpicturebackend.constant.UserConstant;
-import com.wyy.yunpicturebackend.exception.ErrorCode;
-import com.wyy.yunpicturebackend.exception.ThrowUtils;
+import com.wyy.yunpicture.infrastructure.annotation.AuthCheck;
+import com.wyy.yunpicture.infrastructure.common.BaseResponse;
+import com.wyy.yunpicture.infrastructure.common.DeleteRequest;
+import com.wyy.yunpicture.infrastructure.common.ResultUtils;
+import com.wyy.yunpicture.interfaces.dto.user.*;
+import com.wyy.yunpicture.domain.user.constant.UserConstant;
+import com.wyy.yunpicture.infrastructure.exception.ErrorCode;
+import com.wyy.yunpicture.infrastructure.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.model.dto.user.*;
-import com.wyy.yunpicturebackend.model.entity.User;
-import com.wyy.yunpicturebackend.model.vo.LoginUserVO;
-import com.wyy.yunpicturebackend.model.vo.UserVO;
-import com.wyy.yunpicturebackend.service.UserService;
+import com.wyy.yunpicture.domain.user.entity.User;
+import com.wyy.yunpicture.interfaces.vo.user.LoginUserVO;
+import com.wyy.yunpicture.interfaces.vo.user.UserVO;
+import com.wyy.yunpicture.application.service.UserApplicationService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -25,7 +26,7 @@ import java.util.List;
 public class UserController {
 
     @Resource
-    private UserService userService;
+    private UserApplicationService userApplicationService;
 
     /**
      * 用户注册
@@ -35,7 +36,7 @@ public class UserController {
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest){
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR, "参数为空");
-        Long userId = userService.userRegister(userRegisterRequest);
+        Long userId = userApplicationService.userRegister(userRegisterRequest);
         return ResultUtils.success(userId);
     }
 
@@ -48,7 +49,7 @@ public class UserController {
     @PostMapping("/login")
     public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request){
         ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR, "参数为空");
-        LoginUserVO loginUserVO = userService.userLogin(userLoginRequest, request);
+        LoginUserVO loginUserVO = userApplicationService.userLogin(userLoginRequest, request);
         return ResultUtils.success(loginUserVO);
     }
 
@@ -59,8 +60,8 @@ public class UserController {
      */
     @GetMapping("/get/login")
     public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request){
-        User user = userService.getLoginUser(request);
-        LoginUserVO loginUserVO = userService.getLoginUserVO(user);
+        User user = userApplicationService.getLoginUser(request);
+        LoginUserVO loginUserVO = userApplicationService.getLoginUserVO(user);
         return ResultUtils.success(loginUserVO);
     }
 
@@ -71,7 +72,7 @@ public class UserController {
      */
     @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request){
-        Boolean res = userService.userLogout(request);
+        Boolean res = userApplicationService.userLogout(request);
         return ResultUtils.success(res);
     }
 
@@ -88,9 +89,9 @@ public class UserController {
         BeanUtil.copyProperties(addUserRequest, user);
         //设置默认密码
         final String DEFAULT_PASSWORD = "12345678";
-        String encryptPassword = userService.getEncryptPassword(DEFAULT_PASSWORD);
+        String encryptPassword = userApplicationService.getEncryptPassword(DEFAULT_PASSWORD);
         user.setUserPassword(encryptPassword);
-        boolean success = userService.save(user);
+        boolean success = userApplicationService.save(user);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(user.getId());
     }
@@ -104,7 +105,7 @@ public class UserController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest){
         ThrowUtils.throwIf(deleteRequest == null, ErrorCode.PARAMS_ERROR);
-        boolean success = userService.removeById(deleteRequest.getId());
+        boolean success = userApplicationService.removeById(deleteRequest.getId());
         ThrowUtils.throwIf(!success, ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(true);
     }
@@ -120,7 +121,7 @@ public class UserController {
         ThrowUtils.throwIf(updateUserRequest == null, ErrorCode.PARAMS_ERROR);
         User user = new User();
         BeanUtil.copyProperties(updateUserRequest, user);
-        boolean success = userService.updateById(user);
+        boolean success = userApplicationService.updateById(user);
         ThrowUtils.throwIf(!success, ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(true);
     }
@@ -134,7 +135,7 @@ public class UserController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<User> getUserById(Long id){
         ThrowUtils.throwIf(null == id || id < 0, ErrorCode.PARAMS_ERROR);
-        User user = userService.getById(id);
+        User user = userApplicationService.getById(id);
         ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
         return ResultUtils.success(user);
     }
@@ -148,7 +149,7 @@ public class UserController {
     public BaseResponse<UserVO> getUserVOById(Long id){
         BaseResponse<User> userBaseResponse = getUserById(id);
         User user = userBaseResponse.getData();
-        UserVO userVO = userService.getUserVO(user);
+        UserVO userVO = userApplicationService.getUserVO(user);
         return ResultUtils.success(userVO);
     }
 
@@ -162,10 +163,10 @@ public class UserController {
     public BaseResponse<Page<UserVO>> getListUserVOByPage(@RequestBody QueryUserRequest queryUserRequest){
         int current = queryUserRequest.getCurrent();
         int pageSize = queryUserRequest.getPageSize();
-        Page<User> userPage = userService.page(new Page<>(current, pageSize),
-                userService.getQueryWrapper(queryUserRequest));
+        Page<User> userPage = userApplicationService.page(new Page<>(current, pageSize),
+                userApplicationService.getQueryWrapper(queryUserRequest));
         List<User> userList = userPage.getRecords();
-        List<UserVO> userVOList = userService.getUserVOList(userList);
+        List<UserVO> userVOList = userApplicationService.getUserVOList(userList);
         Page<UserVO> userVOPage = new Page<>(current, pageSize, userPage.getTotal());
         userVOPage.setRecords(userVOList);
         return ResultUtils.success(userVOPage);

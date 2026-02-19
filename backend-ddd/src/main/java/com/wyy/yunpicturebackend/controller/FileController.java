@@ -1,15 +1,13 @@
 package com.wyy.yunpicturebackend.controller;
 
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.http.server.HttpServerResponse;
 import com.qcloud.cos.utils.IOUtils;
-import com.wyy.yunpicturebackend.annotation.AuthCheck;
-import com.wyy.yunpicturebackend.common.BaseResponse;
-import com.wyy.yunpicturebackend.common.ResultUtils;
-import com.wyy.yunpicturebackend.constant.UserConstant;
-import com.wyy.yunpicturebackend.exception.BusinessException;
-import com.wyy.yunpicturebackend.exception.ErrorCode;
-import com.wyy.yunpicturebackend.manager.COSManager;
+import com.wyy.yunpicture.infrastructure.annotation.AuthCheck;
+import com.wyy.yunpicture.infrastructure.common.BaseResponse;
+import com.wyy.yunpicture.infrastructure.common.ResultUtils;
+import com.wyy.yunpicture.domain.user.constant.UserConstant;
+import com.wyy.yunpicture.infrastructure.exception.BusinessException;
+import com.wyy.yunpicture.infrastructure.exception.ErrorCode;
+import com.wyy.yunpicture.infrastructure.api.COSManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;

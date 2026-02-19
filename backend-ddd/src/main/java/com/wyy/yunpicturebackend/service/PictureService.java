@@ -2,14 +2,12 @@ package com.wyy.yunpicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wyy.yunpicturebackend.api.aliyunai.model.CreateOutPaintingTaskResponse;
+import com.wyy.yunpicture.infrastructure.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.wyy.yunpicturebackend.model.dto.picture.*;
 import com.wyy.yunpicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.wyy.yunpicturebackend.model.entity.User;
+import com.wyy.yunpicture.domain.user.entity.User;
 import com.wyy.yunpicturebackend.model.vo.PictureVO;
-import io.swagger.models.auth.In;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 

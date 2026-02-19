@@ -2,26 +2,24 @@ package com.wyy.yunpicturebackend.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjUtil;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wyy.yunpicturebackend.annotation.AuthCheck;
-import com.wyy.yunpicturebackend.common.BaseResponse;
-import com.wyy.yunpicturebackend.common.DeleteRequest;
-import com.wyy.yunpicturebackend.common.ResultUtils;
-import com.wyy.yunpicturebackend.constant.UserConstant;
-import com.wyy.yunpicturebackend.exception.BusinessException;
-import com.wyy.yunpicturebackend.exception.ErrorCode;
-import com.wyy.yunpicturebackend.exception.ThrowUtils;
+import com.wyy.yunpicture.application.service.UserApplicationService;
+import com.wyy.yunpicture.infrastructure.annotation.AuthCheck;
+import com.wyy.yunpicture.infrastructure.common.BaseResponse;
+import com.wyy.yunpicture.infrastructure.common.DeleteRequest;
+import com.wyy.yunpicture.infrastructure.common.ResultUtils;
+import com.wyy.yunpicture.domain.user.constant.UserConstant;
+import com.wyy.yunpicture.infrastructure.exception.BusinessException;
+import com.wyy.yunpicture.infrastructure.exception.ErrorCode;
+import com.wyy.yunpicture.infrastructure.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.manager.auth.SpaceUserAuthManager;
 import com.wyy.yunpicturebackend.model.dto.space.*;
 import com.wyy.yunpicturebackend.model.entity.Space;
-import com.wyy.yunpicturebackend.model.entity.User;
+import com.wyy.yunpicture.domain.user.entity.User;
 import com.wyy.yunpicturebackend.model.enums.SpaceLevelEnum;
 import com.wyy.yunpicturebackend.model.vo.SpaceVO;
 import com.wyy.yunpicturebackend.service.SpaceService;
-import com.wyy.yunpicturebackend.service.UserService;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -29,10 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
 
 @RestController
 @RequestMapping("/space")
@@ -42,7 +37,7 @@ public class SpaceController {
     private SpaceService spaceService;
 
     @Resource
-    private UserService userService;
+    private UserApplicationService userApplicationService;
 
     @Resource
     private SpaceUserAuthManager spaceUserAuthManager;
@@ -51,7 +46,7 @@ public class SpaceController {
     public BaseResponse<Long> addSpace(@RequestBody AddSpaceRequest addSpaceRequest, HttpServletRequest request){
         //校验参数
         ThrowUtils.throwIf(ObjUtil.isNull(addSpaceRequest), ErrorCode.PARAMS_ERROR);
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = userApplicationService.getLoginUser(request);
         long newSpaceId = spaceService.addSpace(addSpaceRequest, loginUser);
         return ResultUtils.success(newSpaceId);
     }
@@ -73,9 +68,9 @@ public class SpaceController {
         Space oldSpace = spaceService.getById(spaceId);
         ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
         //是本人或管理员
-        User user = userService.getLoginUser(request);
+        User user = userApplicationService.getLoginUser(request);
         spaceService.checkSpaceAuth(user, oldSpace);
-        /*if (!(oldSpace.getUserId().equals(user.getId()) || userService.isAdmin(user))){
+        /*if (!(oldSpace.getUserId().equals(user.getId()) || userApplicationService.isAdmin(user))){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }*/
         //删除
@@ -109,7 +104,7 @@ public class SpaceController {
         //详细校验
         spaceService.validateSpaceParams(space, false);
         //补充审核参数
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = userApplicationService.getLoginUser(request);
         //更新
         boolean success = spaceService.updateById(space);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
@@ -140,9 +135,9 @@ public class SpaceController {
         //详细校验
         spaceService.validateSpaceParams(space, false);
         //是否为本人或管理员
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = userApplicationService.getLoginUser(request);
         spaceService.checkSpaceAuth(loginUser, oldSpace);
-        /*if (!(oldSpace.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser)) ){
+        /*if (!(oldSpace.getUserId().equals(loginUser.getId()) || userApplicationService.isAdmin(loginUser)) ){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }*/
         //更新信息
@@ -227,7 +222,7 @@ public class SpaceController {
         //封装
         SpaceVO spaceVO = spaceService.getSpaceVO(space, request);
         // 获取空间详情时返回给前端权限列表，方便展示是否显示相关按钮
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = userApplicationService.getLoginUser(request);
         List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
         spaceVO.setPermissionList(permissionList);
         return ResultUtils.success(spaceVO);

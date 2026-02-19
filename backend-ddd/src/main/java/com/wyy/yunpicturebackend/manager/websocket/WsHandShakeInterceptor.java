@@ -1,16 +1,15 @@
 package com.wyy.yunpicturebackend.manager.websocket;
 
 import cn.hutool.core.util.ObjUtil;
+import com.wyy.yunpicture.application.service.UserApplicationService;
 import com.wyy.yunpicturebackend.manager.auth.SpaceUserAuthManager;
 import com.wyy.yunpicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.wyy.yunpicturebackend.model.entity.Picture;
 import com.wyy.yunpicturebackend.model.entity.Space;
-import com.wyy.yunpicturebackend.model.entity.User;
-import com.wyy.yunpicturebackend.model.enums.SpaceRoleEnum;
+import com.wyy.yunpicture.domain.user.entity.User;
 import com.wyy.yunpicturebackend.model.enums.SpaceTypeEnum;
 import com.wyy.yunpicturebackend.service.PictureService;
 import com.wyy.yunpicturebackend.service.SpaceService;
-import com.wyy.yunpicturebackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -29,7 +28,7 @@ import java.util.Map;
 public class WsHandShakeInterceptor implements HandshakeInterceptor {
 
     @Resource
-    private UserService userService;
+    private UserApplicationService userApplicationService;
 
     @Resource
     private PictureService pictureService;
@@ -50,7 +49,7 @@ public class WsHandShakeInterceptor implements HandshakeInterceptor {
             // 获取参数（图片id和用户）
             String pictureIdStr = servletRequest.getParameter("pictureId");
             Long pictureId = Long.valueOf(pictureIdStr);
-            User loginUser = userService.getLoginUser(servletRequest);
+            User loginUser = userApplicationService.getLoginUser(servletRequest);
             // 基本校验和权限校验
             if (ObjUtil.isEmpty(pictureId)) {
                 log.error("缺少图片id，拒绝握手");

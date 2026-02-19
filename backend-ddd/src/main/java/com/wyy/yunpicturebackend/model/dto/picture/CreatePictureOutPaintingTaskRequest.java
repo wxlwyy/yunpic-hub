@@ -1,6 +1,6 @@
 package com.wyy.yunpicturebackend.model.dto.picture;
 
-import com.wyy.yunpicturebackend.api.aliyunai.model.CreateOutPaintingTaskRequest;
+import com.wyy.yunpicture.infrastructure.api.aliyunai.model.CreateOutPaintingTaskRequest;
 import lombok.Data;
 
 import java.io.Serializable;

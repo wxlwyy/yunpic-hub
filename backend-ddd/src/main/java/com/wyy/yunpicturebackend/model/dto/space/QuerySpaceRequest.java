@@ -1,6 +1,6 @@
 package com.wyy.yunpicturebackend.model.dto.space;
 
-import com.wyy.yunpicturebackend.common.PageRequest;
+import com.wyy.yunpicture.infrastructure.common.PageRequest;
 import lombok.Data;
 
 import java.io.Serializable;

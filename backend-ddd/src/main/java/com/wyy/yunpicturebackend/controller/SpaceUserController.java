@@ -2,40 +2,29 @@ package com.wyy.yunpicturebackend.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjUtil;
-import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wyy.yunpicturebackend.annotation.AuthCheck;
-import com.wyy.yunpicturebackend.common.BaseResponse;
-import com.wyy.yunpicturebackend.common.DeleteRequest;
-import com.wyy.yunpicturebackend.common.ResultUtils;
-import com.wyy.yunpicturebackend.constant.UserConstant;
-import com.wyy.yunpicturebackend.exception.BusinessException;
-import com.wyy.yunpicturebackend.exception.ErrorCode;
-import com.wyy.yunpicturebackend.exception.ThrowUtils;
+import com.wyy.yunpicture.application.service.UserApplicationService;
+import com.wyy.yunpicture.infrastructure.common.BaseResponse;
+import com.wyy.yunpicture.infrastructure.common.DeleteRequest;
+import com.wyy.yunpicture.infrastructure.common.ResultUtils;
+import com.wyy.yunpicture.infrastructure.exception.BusinessException;
+import com.wyy.yunpicture.infrastructure.exception.ErrorCode;
+import com.wyy.yunpicture.infrastructure.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.manager.auth.annotation.SaSpaceCheckPermission;
 import com.wyy.yunpicturebackend.manager.auth.model.SpaceUserPermissionConstant;
-import com.wyy.yunpicturebackend.model.dto.space.*;
 import com.wyy.yunpicturebackend.model.dto.spaceuser.SpaceUserAddRequest;
 import com.wyy.yunpicturebackend.model.dto.spaceuser.SpaceUserEditRequest;
 import com.wyy.yunpicturebackend.model.dto.spaceuser.SpaceUserQueryRequest;
-import com.wyy.yunpicturebackend.model.entity.Space;
 import com.wyy.yunpicturebackend.model.entity.SpaceUser;
-import com.wyy.yunpicturebackend.model.entity.User;
-import com.wyy.yunpicturebackend.model.enums.SpaceLevelEnum;
+import com.wyy.yunpicture.domain.user.entity.User;
 import com.wyy.yunpicturebackend.model.vo.SpaceUserVO;
-import com.wyy.yunpicturebackend.model.vo.SpaceVO;
 import com.wyy.yunpicturebackend.service.SpaceService;
 import com.wyy.yunpicturebackend.service.SpaceUserService;
-import com.wyy.yunpicturebackend.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/spaceUser")
@@ -45,7 +34,7 @@ public class SpaceUserController {
     private SpaceService spaceService;
 
     @Resource
-    private UserService userService;
+    private UserApplicationService userApplicationService;
 
     @Resource
     private SpaceUserService spaceUserService;
@@ -159,7 +148,7 @@ public class SpaceUserController {
      */
     @PostMapping("/list/my")
     public BaseResponse<List<SpaceUserVO>> listMyTeamSpace(HttpServletRequest request) {
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = userApplicationService.getLoginUser(request);
         SpaceUserQueryRequest spaceUserQueryRequest = new SpaceUserQueryRequest();
         spaceUserQueryRequest.setUserId(loginUser.getId());
         List<SpaceUser> spaceUserList = spaceUserService.list(
