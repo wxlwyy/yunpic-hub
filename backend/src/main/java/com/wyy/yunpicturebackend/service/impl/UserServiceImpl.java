@@ -6,15 +6,17 @@ import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.server.HttpServerRequest;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.wyy.yunpicturebackend.common.BaseResponse;
+import com.wyy.yunpicturebackend.common.DeleteRequest;
+import com.wyy.yunpicturebackend.common.ResultUtils;
 import com.wyy.yunpicturebackend.constant.UserConstant;
 import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.manager.auth.StpKit;
-import com.wyy.yunpicturebackend.model.dto.user.QueryUserRequest;
-import com.wyy.yunpicturebackend.model.dto.user.UserLoginRequest;
-import com.wyy.yunpicturebackend.model.dto.user.UserRegisterRequest;
+import com.wyy.yunpicturebackend.model.dto.user.*;
 import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.enums.UserRoleEnum;
 import com.wyy.yunpicturebackend.model.vo.LoginUserVO;
@@ -45,28 +47,30 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public Long userRegister(UserRegisterRequest userRegisterRequest) {
-        //校验：账号，密码，确认密码
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        ThrowUtils.throwIf(StrUtil.hasBlank(userAccount, userPassword, checkPassword), ErrorCode.PARAMS_ERROR, "请求参数为空");
-        ThrowUtils.throwIf(userAccount.length() < 4, ErrorCode.PARAMS_ERROR, "账号不能小于4位");
-        ThrowUtils.throwIf(userPassword.length() < 8, ErrorCode.PARAMS_ERROR, "密码不能小于8位");
+//        ThrowUtils.throwIf(StrUtil.hasBlank(userAccount, userPassword, checkPassword), ErrorCode.PARAMS_ERROR, "请求参数为空");
+//        ThrowUtils.throwIf(userAccount.length() < 4, ErrorCode.PARAMS_ERROR, "账号不能小于4位");
+//        ThrowUtils.throwIf(userPassword.length() < 8, ErrorCode.PARAMS_ERROR, "密码不能小于8位");
+        // 参数校验
         ThrowUtils.throwIf(!userPassword.equals(checkPassword), ErrorCode.PARAMS_ERROR, "两次密码不一致");
-        //查看账号是否重复
+        // 业务校验，查看账号是否重复
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.eq("userAccount", userAccount);
-        Long count = baseMapper.selectCount(userQueryWrapper);
+        // Long count = baseMapper.selectCount(userQueryWrapper);
+        long count = count(userQueryWrapper);  // 一般统一用封装好的sql语句方法
         ThrowUtils.throwIf(count > 0, ErrorCode.PARAMS_ERROR, "账号重复");
-        //加密
-        String encryptPassword = getEncryptPassword(userPassword);
+
         //插入数据
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserName("user");
+        String encryptPassword = getEncryptPassword(userPassword);  //加密
         user.setUserPassword(encryptPassword);
         user.setUserRole(UserRoleEnum.USER.getValue());
         boolean success = save(user);
+        // 业务校验
         ThrowUtils.throwIf(!success, ErrorCode.SYSTEM_ERROR, "注册失败，数据库错误");
         return user.getId();
     }
@@ -92,37 +96,39 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public LoginUserVO userLogin(UserLoginRequest userLoginRequest, HttpServletRequest request) {
-        //校验参数
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
-        ThrowUtils.throwIf(StrUtil.hasBlank(userAccount, userPassword), ErrorCode.PARAMS_ERROR, "参数为空");
-        ThrowUtils.throwIf(userAccount.length() < 4, ErrorCode.PARAMS_ERROR, "账号不能小于4位");
-        ThrowUtils.throwIf(userPassword.length() < 8, ErrorCode.PARAMS_ERROR, "密码不能小于8位");
-        //加密，查询数据
+//        ThrowUtils.throwIf(StrUtil.hasBlank(userAccount, userPassword), ErrorCode.PARAMS_ERROR, "参数为空");
+//        ThrowUtils.throwIf(userAccount.length() < 4, ErrorCode.PARAMS_ERROR, "账号不能小于4位");
+//        ThrowUtils.throwIf(userPassword.length() < 8, ErrorCode.PARAMS_ERROR, "密码不能小于8位");
+        // 业务校验
         String encryptPassword = getEncryptPassword(userPassword);
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.eq("userAccount", userAccount);
         userQueryWrapper.eq("userPassword", encryptPassword);
-        User user = baseMapper.selectOne(userQueryWrapper);
+        // User user = baseMapper.selectOne(userQueryWrapper);
+        User user = getOne(userQueryWrapper);
         ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR, "用户名或密码错误");
-        //将查出的信息存到session中，
+        //将查出的信息存到session中
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
         // 将用户id和用户信息分别存到sa-token中，
         StpKit.SPACE.login(user.getId());
         StpKit.SPACE.getSession().set(UserConstant.USER_LOGIN_STATE, user);
         //返回脱敏信息
         return getLoginUserVO(user);
-
     }
 
 
     /**
-     * 对用户信息进行脱敏
+     * 对登录的用户信息进行脱敏（仅仅是一个 “数据转换器”（从 Entity 转换到 VO 的单一职责边界）。它的职责就是“翻译数据”，
+     * 而不是“做业务校验”。“输入是空，输出自然是空”，这在逻辑上是完美的。VO 转换）
      * @param user 用户信息
      * @return 脱敏后的用户信息
      */
     public LoginUserVO getLoginUserVO(User user) {
-        ThrowUtils.throwIf(user == null, ErrorCode.PARAMS_ERROR, "参数为空");
+        if (user == null) {
+            return null;
+        }
         LoginUserVO loginUserVO = new LoginUserVO();
         BeanUtil.copyProperties(user, loginUserVO);
         return loginUserVO;
@@ -135,15 +141,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public User getLoginUser(HttpServletRequest request) {
-        //判断session中是否有用户信息
+        //业务校验，判断session中是否有用户信息
         Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
         ThrowUtils.throwIf(userObj == null, ErrorCode.NOT_LOGIN_ERROR);
-        //在数据库中查用户信息，防止用户登录后且session未过期但用户被删除的情况
+        //权限校验，在数据库中查用户信息，并且保持用户信息的最新状态
         User currentUser = (User) userObj;
         Long userId = currentUser.getId();
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.eq("id", userId);
-        currentUser = baseMapper.selectOne(userQueryWrapper);
+        // currentUser = baseMapper.selectOne(userQueryWrapper);
+        currentUser = getOne(userQueryWrapper);
         ThrowUtils.throwIf(currentUser == null, ErrorCode.NOT_LOGIN_ERROR);
         return currentUser;
     }
@@ -155,7 +162,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public Boolean userLogout(HttpServletRequest request) {
-        //判断是否登录
+        //业务校验，判断是否登录
         Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
         ThrowUtils.throwIf(userObj == null, ErrorCode.NOT_LOGIN_ERROR);
         //如果登录，移除登录状态
@@ -164,7 +171,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
-     * 查询用户信息（脱敏）
+     * 对用户信息（脱敏）
      * @param user 用户信息
      * @return 脱敏的用户信息
      */
@@ -188,12 +195,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (CollUtil.isEmpty(users)){
             return new ArrayList<>();
         }
-        List<UserVO> userVOS = users.stream().map(user -> getUserVO(user)).collect(Collectors.toList());
-        return userVOS;
+        List<UserVO> userVOList = users.stream().map(user -> getUserVO(user)).collect(Collectors.toList());
+        return userVOList;
     }
 
     /**
-     * 将查询的数据封装为查询条件对象
+     * 构造查询条件
      * @param queryUserRequest 查询的数据
      * @return 查询条件对象
      */
@@ -210,7 +217,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
        String sortOrder = queryUserRequest.getSortOrder();
 
        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-       userQueryWrapper.eq(null != id && id > 0, "id", id);
+       userQueryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
        userQueryWrapper.eq(StrUtil.isNotBlank(userRole), "userRole", userRole);
        userQueryWrapper.eq(StrUtil.isNotBlank(userAccount), "userAccount", userAccount);
        userQueryWrapper.like(StrUtil.isNotBlank(userName), "userName", userName);
@@ -226,7 +233,99 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public boolean isAdmin(User user) {
-        return user != null && UserConstant.ADMIN_ROLE.equals(user.getUserRole());
+        return user != null && UserRoleEnum.ADMIN.getValue().equals(user.getUserRole());
+    }
+
+    @Override
+    public Long addUser(AddUserRequest addUserRequest) {
+        // 业务校验，查看账号是否重复
+        String userAccount = addUserRequest.getUserAccount();
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.eq("userAccount", userAccount);
+        long count = count(userQueryWrapper);
+        ThrowUtils.throwIf(count > 0, ErrorCode.PARAMS_ERROR, "账号重复");
+
+        User user = new User();
+        BeanUtil.copyProperties(addUserRequest, user);
+        //设置默认密码
+        final String DEFAULT_PASSWORD = "12345678";
+        String encryptPassword = getEncryptPassword(DEFAULT_PASSWORD);
+        user.setUserPassword(encryptPassword);
+        boolean success = save(user);
+        ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
+        return user.getId();
+    }
+
+    @Override
+    public void deleteUser(DeleteRequest deleteRequest, User loginUser) {
+        // 1. 业务校验
+        Long userId = deleteRequest.getId();
+        ThrowUtils.throwIf(userId.equals(loginUser.getId()), ErrorCode.PARAMS_ERROR, "管理员不能删除自己");
+
+        // 2. 业务校验：防空删
+        User oldUser = getById(userId);
+        ThrowUtils.throwIf(oldUser == null, ErrorCode.NOT_FOUND_ERROR, "要删除的用户不存在");
+
+        // 3. 执行核心动作
+        boolean success = removeById(userId);
+        ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR, "删除失败，数据库异常");
+    }
+
+    @Override
+    public Boolean updateUser(UpdateUserRequest updateUserRequest) {
+        Long id = updateUserRequest.getId();
+
+        // 参数校验：防非法角色枚举
+        // 如果前端传了角色，必须确保这个角色是系统里规定的（user 或 admin）
+        String userRole = updateUserRequest.getUserRole();
+        if (StrUtil.isNotBlank(userRole)) {
+            // 假设你们有一个 UserRoleEnum 枚举类
+            UserRoleEnum roleEnum = UserRoleEnum.getUserRoleEnumByValue(userRole);
+            ThrowUtils.throwIf(roleEnum == null, ErrorCode.PARAMS_ERROR, "非法的用户角色");
+        }
+
+        // 业务校验：防空更新（必须先确认库里有这个人）
+        User oldUser = getById(id);
+        ThrowUtils.throwIf(oldUser == null, ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+
+        // 3. 实体转换与更新
+        User user = new User();
+        BeanUtil.copyProperties(updateUserRequest, user);
+
+        // 4. 操作数据库并断言结果
+        boolean success = updateById(user);
+        ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR, "更新失败，数据库异常");
+
+        return true;
+    }
+
+    @Override
+    public User getUserById(Long id) {
+//        ThrowUtils.throwIf(null == id || id < 0, ErrorCode.PARAMS_ERROR);
+        User user = getById(id);
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
+        return user;
+    }
+
+    @Override
+    public Page<UserVO> getUserVOByPage(QueryUserRequest queryUserRequest) {
+        long current = queryUserRequest.getCurrent();
+        long pageSize = queryUserRequest.getPageSize();
+
+        // 查询数据库
+        Page<User> userPage = page(new Page<>(current, pageSize), getQueryWrapper(queryUserRequest));
+        // 拿到原始数据列表
+        List<User> userList = userPage.getRecords();
+        // 构建新的 VO 分页对象
+        Page<UserVO> userVOPage = new Page<>(current, pageSize, userPage.getTotal());
+        // 判断一下，如果查出来数据为空，直接返回空的分页对象，没必要去走脱敏逻辑了
+        if (CollUtil.isEmpty(userList)) {
+            return userVOPage;
+        }
+        // 脱敏并塞回分页对象
+        List<UserVO> userVOList = getUserVOList(userList);
+        userVOPage.setRecords(userVOList);
+        return userVOPage;
     }
 }
 

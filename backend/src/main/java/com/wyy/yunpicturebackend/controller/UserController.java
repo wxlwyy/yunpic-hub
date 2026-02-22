@@ -14,14 +14,18 @@ import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.vo.LoginUserVO;
 import com.wyy.yunpicturebackend.model.vo.UserVO;
 import com.wyy.yunpicturebackend.service.UserService;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
-@RestController
+@RestController  // @Controller + @ResponseBody
 @RequestMapping("/user")
+@Validated
 public class UserController {
 
     @Resource
@@ -33,8 +37,8 @@ public class UserController {
      * @return 用户id
      */
     @PostMapping("/register")
-    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest){
-        ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR, "参数为空");
+    public BaseResponse<Long> userRegister(@Validated @RequestBody UserRegisterRequest userRegisterRequest){
+//        ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR, "参数为空");
         Long userId = userService.userRegister(userRegisterRequest);
         return ResultUtils.success(userId);
     }
@@ -46,8 +50,8 @@ public class UserController {
      * @return 脱敏后的用户信息
      */
     @PostMapping("/login")
-    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request){
-        ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR, "参数为空");
+    public BaseResponse<LoginUserVO> userLogin(@Validated @RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request){
+//        ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR, "参数为空");
         LoginUserVO loginUserVO = userService.userLogin(userLoginRequest, request);
         return ResultUtils.success(loginUserVO);
     }
@@ -82,17 +86,9 @@ public class UserController {
      */
     @PostMapping("/add")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Long> addUser(@RequestBody AddUserRequest addUserRequest){
-        ThrowUtils.throwIf(addUserRequest == null, ErrorCode.PARAMS_ERROR);
-        User user = new User();
-        BeanUtil.copyProperties(addUserRequest, user);
-        //设置默认密码
-        final String DEFAULT_PASSWORD = "12345678";
-        String encryptPassword = userService.getEncryptPassword(DEFAULT_PASSWORD);
-        user.setUserPassword(encryptPassword);
-        boolean success = userService.save(user);
-        ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(user.getId());
+    public BaseResponse<Long> addUser(@Validated @RequestBody AddUserRequest addUserRequest){
+        Long userId = userService.addUser(addUserRequest);
+        return ResultUtils.success(userId)
     }
 
     /**
@@ -102,10 +98,11 @@ public class UserController {
      */
     @PostMapping("/delete")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest){
-        ThrowUtils.throwIf(deleteRequest == null, ErrorCode.PARAMS_ERROR);
-        boolean success = userService.removeById(deleteRequest.getId());
-        ThrowUtils.throwIf(!success, ErrorCode.PARAMS_ERROR);
+    public BaseResponse<Boolean> deleteUser(@Validated @RequestBody DeleteRequest deleteRequest,
+                                            HttpServletRequest request){
+        // 获取当前操作的管理员（为了防止他删掉自己信息）
+        User loginUser = userService.getLoginUser(request);
+        userService.deleteUser(deleteRequest, loginUser);
         return ResultUtils.success(true);
     }
 
@@ -116,13 +113,9 @@ public class UserController {
      */
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updateUser(@RequestBody UpdateUserRequest updateUserRequest){
-        ThrowUtils.throwIf(updateUserRequest == null, ErrorCode.PARAMS_ERROR);
-        User user = new User();
-        BeanUtil.copyProperties(updateUserRequest, user);
-        boolean success = userService.updateById(user);
-        ThrowUtils.throwIf(!success, ErrorCode.PARAMS_ERROR);
-        return ResultUtils.success(true);
+    public BaseResponse<Boolean> updateUser(@Validated @RequestBody UpdateUserRequest updateUserRequest){
+        boolean result = userService.updateUser(updateUserRequest);
+        return ResultUtils.success(result);
     }
 
     /**
@@ -132,10 +125,10 @@ public class UserController {
      */
     @GetMapping("/get")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<User> getUserById(Long id){
-        ThrowUtils.throwIf(null == id || id < 0, ErrorCode.PARAMS_ERROR);
-        User user = userService.getById(id);
-        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
+    public BaseResponse<User> getUserById(@NotNull(message = "用户ID不能为空")
+                                              @Min(value = 1, message = "用户ID不合法")
+                                              Long id){
+        User user = userService.getUserById(id);
         return ResultUtils.success(user);
     }
 
@@ -145,9 +138,10 @@ public class UserController {
      * @return 用户脱敏数据
      */
     @GetMapping("/get/vo")
-    public BaseResponse<UserVO> getUserVOById(Long id){
-        BaseResponse<User> userBaseResponse = getUserById(id);
-        User user = userBaseResponse.getData();
+    public BaseResponse<UserVO> getUserVOById(@NotNull(message = "用户ID不能为空")
+                                                  @Min(value = 1, message = "用户ID不合法")
+                                                  Long id){
+        User user = userService.getUserById(id);
         UserVO userVO = userService.getUserVO(user);
         return ResultUtils.success(userVO);
     }
@@ -159,15 +153,8 @@ public class UserController {
      */
     @PostMapping("/list/page/vo")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<UserVO>> getListUserVOByPage(@RequestBody QueryUserRequest queryUserRequest){
-        int current = queryUserRequest.getCurrent();
-        int pageSize = queryUserRequest.getPageSize();
-        Page<User> userPage = userService.page(new Page<>(current, pageSize),
-                userService.getQueryWrapper(queryUserRequest));
-        List<User> userList = userPage.getRecords();
-        List<UserVO> userVOList = userService.getUserVOList(userList);
-        Page<UserVO> userVOPage = new Page<>(current, pageSize, userPage.getTotal());
-        userVOPage.setRecords(userVOList);
+    public BaseResponse<Page<UserVO>> getListUserVOByPage(@Validated @RequestBody QueryUserRequest queryUserRequest){
+        Page<UserVO> userVOPage = userService.getUserVOByPage(queryUserRequest);
         return ResultUtils.success(userVOPage);
     }
 }

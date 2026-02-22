@@ -27,7 +27,7 @@ public interface PictureService extends IService<Picture> {
      * @param loginUser
      * @return
      */
-    PictureVO uploadPicture(Object inputSource, UploadPictureRequest uploadPictureRequest, User loginUser);
+    PictureVO uploadOrUpdatePicture(Object inputSource, UploadPictureRequest uploadPictureRequest, User loginUser);
 
     /**
      * 批量抓取并创建图片
@@ -49,7 +49,7 @@ public interface PictureService extends IService<Picture> {
      * @param editPictureRequest
      * @param loginUser
      */
-    void editPicture(EditPictureRequest editPictureRequest, User loginUser);
+    void editPictureInfo(EditPictureRequest editPictureRequest, User loginUser);
 
     /**
      * 将个人空间中的图片批量修改为相同的分类/标签/名称
@@ -57,7 +57,7 @@ public interface PictureService extends IService<Picture> {
      * @param loginUser
      * @return
      */
-    void editPictureByBatch(EditPictureByBatchRequest editPictureByBatchRequest, User loginUser);
+    void editPictureInfoByBatch(EditPictureByBatchRequest editPictureByBatchRequest, User loginUser);
 
     /**
      * 空间权限校验
@@ -70,7 +70,7 @@ public interface PictureService extends IService<Picture> {
      * 校验新增、修改图片时的参数
      * @param picture
      */
-    void validPicture(Picture picture);
+    void validPictureParam(Picture picture);
 
     /**
      * 获取图片包装类（主要是给userVO赋值）

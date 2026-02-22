@@ -30,17 +30,25 @@ public class AuthInterceptor {
         //首先得确保登录状态：获取request对象，取出当前登录状态的用户信息，和枚举类比较
         RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
         HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
+        // 获取登录角色，并校验是否登录
         User user = userService.getLoginUser(request);
-        String loginRole = user.getUserRole();
-        UserRoleEnum loginRoleEnum = UserRoleEnum.getUserRoleEnumByValue(loginRole);
+
         //判断当前方法需要的角色，没有要求则直接放行
         String mustRole = authCheck.mustRole();
         UserRoleEnum mustRoleEnum = UserRoleEnum.getUserRoleEnumByValue(mustRole);
         if (mustRoleEnum == null){
             return joinPoint.proceed();
         }
+
+        String loginRole = user.getUserRole();
+        UserRoleEnum loginRoleEnum = UserRoleEnum.getUserRoleEnumByValue(loginRole);
+        // 没有权限，拒绝
+        if (loginRoleEnum == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+
         //当前方法所需的角色是管理员，当前登录的角色也是管理员
-        if (UserRoleEnum.ADMIN.getValue().equals(mustRole) && !UserRoleEnum.ADMIN.getValue().equals(loginRole)){
+        if (UserRoleEnum.ADMIN.equals(mustRoleEnum) && !UserRoleEnum.ADMIN.equals(loginRoleEnum)){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         return joinPoint.proceed();

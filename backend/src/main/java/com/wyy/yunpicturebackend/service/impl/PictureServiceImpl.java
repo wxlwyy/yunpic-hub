@@ -89,8 +89,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      * @return
      */
     @Override
-    public PictureVO uploadPicture(Object inputSource, UploadPictureRequest uploadPictureRequest, User loginUser) {
-        ThrowUtils.throwIf(ObjUtil.isEmpty(loginUser), ErrorCode.NO_AUTH_ERROR);
+    public PictureVO uploadOrUpdatePicture(Object inputSource, UploadPictureRequest uploadPictureRequest, User loginUser) {
+        ThrowUtils.throwIf(ObjUtil.isNull(loginUser), ErrorCode.NO_AUTH_ERROR);
         //如果是个人空间，判断空间是否存在，校验权限
         Long spaceId = uploadPictureRequest.getSpaceId();
         if (spaceId != null) {
@@ -111,10 +111,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             }
         }
         //判断是否有图片id，id不为空查库是否存在是更新，id为空是新增
-        Long pictureId = null;
+        Long pictureId = ObjUtil.isNull(uploadPictureRequest) ? null : uploadPictureRequest.getId();
+        /*Long pictureId = null;
         if (uploadPictureRequest != null) {
             pictureId = uploadPictureRequest.getId();
-        }
+        }*/
         //如果是上传图片时替换图片查看是否存在这个图片
         if (pictureId != null) {
             //boolean exists = lambdaQuery().eq(Picture::getId, pictureId).exists();
@@ -143,11 +144,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             }
         }
         //设置相应的图片存放在云存储中的目录
-        String uploadPicturePrefix;
+        String bizPath;
         if (spaceId == null) {
-            uploadPicturePrefix = String.format("public/%s", loginUser.getId());
+            bizPath = String.format("public/%s", loginUser.getId());
         } else {
-            uploadPicturePrefix = String.format("space/%s", spaceId);
+            bizPath = String.format("space/%s", spaceId);
         }
         //上传图片，并赋值
         //先默认为文件上传
@@ -155,7 +156,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (inputSource instanceof String) {
             uploadPictureTemplate = uploadUrlPicture;
         }
-        UploadPictureResult uploadPictureResult = uploadPictureTemplate.uploadPicture(inputSource, uploadPicturePrefix);
+        UploadPictureResult uploadPictureResult = uploadPictureTemplate.uploadPicture(inputSource, bizPath);
         Picture picture = new Picture();
         picture.setUrl(uploadPictureResult.getUrl());
         picture.setThumbnailUrl(uploadPictureResult.getThumbnailUrl());
@@ -266,7 +267,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
                 if (StrUtil.isNotBlank(picNamePrefix)){
                     uploadPictureRequest.setPicName(picNamePrefix + (uploadCount + 1));
                 }
-                PictureVO pictureVO = uploadPicture(imgSrc, uploadPictureRequest, loginUser);
+                PictureVO pictureVO = uploadOrUpdatePicture(imgSrc, uploadPictureRequest, loginUser);
                 log.info("图片上传成功，id = {}", pictureVO.getId());
                 uploadCount++;
             } catch (Exception e){
@@ -319,7 +320,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      * @param loginUser
      */
     @Override
-    public void editPicture(EditPictureRequest editPictureRequest, User loginUser) {
+    public void editPictureInfo(EditPictureRequest editPictureRequest, User loginUser) {
         //查看是否存在
         Picture oldPicture = getById(editPictureRequest.getId());
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
@@ -329,7 +330,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setEditTime(new Date());
         picture.setTags(JSONUtil.toJsonStr(editPictureRequest.getTags()));
         //详细校验
-        validPicture(picture);
+        validPictureParam(picture);
         //空间权限校验，已经改为使用sa-token注解鉴权
 //        checkPictureAuth(loginUser, oldPicture);
         //补充审核参数
@@ -347,7 +348,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void editPictureByBatch(EditPictureByBatchRequest editPictureByBatchRequest, User loginUser) {
+    public void editPictureInfoByBatch(EditPictureByBatchRequest editPictureByBatchRequest, User loginUser) {
         Long spaceId = editPictureByBatchRequest.getSpaceId();
         List<Long> pictureIdList = editPictureByBatchRequest.getPictureIdList();
         String category = editPictureByBatchRequest.getCategory();
@@ -432,7 +433,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      * @param picture
      */
     @Override
-    public void validPicture(Picture picture) {
+    public void validPictureParam(Picture picture) {
         ThrowUtils.throwIf(picture == null, ErrorCode.PARAMS_ERROR);
         Long id = picture.getId();
         String introduction = picture.getIntroduction();
@@ -455,16 +456,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         PictureVO pictureVO = PictureVO.objToVo(picture);
         //查出图片相关的User信息
         Long userId = pictureVO.getUserId();
-        if (userId != null && userId > 0) {
+        if (userId != null) {
             User user = userService.getById(userId);
-            UserVO userVO = userService.getUserVO(user);
+            UserVO userVO = UserVO.objToVO(user);
             pictureVO.setUserVO(userVO);
         }
         return pictureVO;
     }
 
     /**
-     * 获取图片包装类（分页）
+     * 将图片分页转为图片脱敏分页（将图片脱敏列表中的userVO字段补充完整）
      * @param picturePage
      * @return
      */
@@ -476,24 +477,30 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (pictureList == null) {
             return null;
         }
-        //new一个包装page
-        Page<PictureVO> pictureVOPage = new Page<>(picturePage.getCurrent(), picturePage.getSize(), picturePage.getTotal());
-        //把pictureList转为包装list
-        List<PictureVO> pictureVOList = pictureList.stream().map(p -> PictureVO.objToVo(p)).collect(Collectors.toList());
+        //把pictureList转为包装pictureVOList（信息复制过去，现在只有userVO是空的）
+        List<PictureVO> pictureVOList = pictureList.stream()
+                .map(p -> PictureVO.objToVo(p)).collect(Collectors.toList());
         //关联用户信息，先查所有用户Id（放到set防止重复），用Id查出集合，用户信息绑定
-        Set<Long> userIdSet = pictureList.stream().map(p -> p.getUserId()).collect(Collectors.toSet());
-        List<User> users = userService.listByIds(userIdSet);
-        Map<Long, List<User>> userIdUserListMap = users.stream().collect(Collectors.groupingBy(user -> user.getId()));
+        Set<Long> userIdSet = pictureVOList.stream()
+                .map(p -> p.getUserId()).collect(Collectors.toSet());
+        List<User> userList = userService.listByIds(userIdSet);
+        // 把查出来的 List<User>，直接变成 ID 为 Key，User 本身为 Value 的 Map
+        Map<Long, User> userIdUserMap = userList.stream()
+                .collect(Collectors.toMap(user -> user.getId(), user -> user));
+        /*Map<Long, List<User>> userIdUserListMap = userList.stream()
+                .collect(Collectors.groupingBy(user -> user.getId()));*/
         //遍历包装类，将对应的Id的User信息赋值
         pictureVOList.forEach(pictureVO -> {
             Long userId = pictureVO.getUserId();
             User user = null;
-            if (userIdUserListMap.containsKey(userId)){
-                user = userIdUserListMap.get(userId).get(0);
+            if (userIdUserMap.containsKey(userId)){
+                user = userIdUserMap.get(userId);
             }
             UserVO userVO = userService.getUserVO(user);
             pictureVO.setUserVO(userVO);
         });
+        //new一个包装page
+        Page<PictureVO> pictureVOPage = new Page<>(picturePage.getCurrent(), picturePage.getSize(), picturePage.getTotal());
         pictureVOPage.setRecords(pictureVOList);
         return pictureVOPage;
     }
@@ -530,11 +537,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         String reviewMessage = queryPictureRequest.getReviewMessage();
         Date startEditTime = queryPictureRequest.getStartEditTime();
         Date endEditTime = queryPictureRequest.getEndEditTime();
-        //搜索框查询
-        if (StrUtil.isNotBlank(searchText)){
-            queryWrapper.and(qw -> qw.like("name", searchText)
-                    .or().like("introduction", searchText));
-        }
+
         //其他查询
         queryWrapper.eq(ObjUtil.isNotEmpty(id), "id", id);
         queryWrapper.eq(ObjUtil.isNotEmpty(spaceId), "spaceId", spaceId);
@@ -555,6 +558,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.ge(ObjUtil.isNotEmpty(startEditTime), "editTime", startEditTime);
         // <
         queryWrapper.lt(ObjUtil.isNotEmpty(endEditTime), "editTime", endEditTime);
+        //搜索框查询
+        if (StrUtil.isNotBlank(searchText)){
+            queryWrapper.and(qw -> qw.like("name", searchText)
+                    .or().like("introduction", searchText));
+        }
         if (CollUtil.isNotEmpty(tags)){
             tags.forEach(tag -> queryWrapper.like("tags", "\"" + tag + "\""));
         }

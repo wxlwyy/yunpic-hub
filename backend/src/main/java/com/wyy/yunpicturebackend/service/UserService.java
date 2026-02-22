@@ -2,10 +2,10 @@ package com.wyy.yunpicturebackend.service;
 
 import cn.hutool.http.server.HttpServerRequest;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.wyy.yunpicturebackend.model.dto.user.QueryUserRequest;
-import com.wyy.yunpicturebackend.model.dto.user.UserLoginRequest;
-import com.wyy.yunpicturebackend.model.dto.user.UserRegisterRequest;
+import com.wyy.yunpicturebackend.common.DeleteRequest;
+import com.wyy.yunpicturebackend.model.dto.user.*;
 import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.vo.LoginUserVO;
 import com.wyy.yunpicturebackend.model.vo.UserVO;
@@ -90,4 +90,14 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean isAdmin(User user);
+
+    Long addUser(AddUserRequest addUserRequest);
+
+    void deleteUser(DeleteRequest deleteRequest, User loginUser);
+
+    Boolean updateUser(UpdateUserRequest updateUserRequest);
+
+    User getUserById(Long id);
+
+    Page<UserVO> getUserVOByPage(QueryUserRequest queryUserRequest);
 }

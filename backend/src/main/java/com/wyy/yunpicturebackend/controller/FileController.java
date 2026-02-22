@@ -11,6 +11,7 @@ import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.manager.COSManager;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,6 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.UUID;
 
 @RestController
 @Slf4j
@@ -37,22 +39,35 @@ public class FileController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/test/upload")
     public BaseResponse<String> testUploadFile(@RequestPart MultipartFile multipartFile){
-        String filename = multipartFile.getOriginalFilename();
-        String filePath = String.format("/test/%s",filename);
+        // 获取原文件名 (比如: 1.jpg)
+        String originalFilename = multipartFile.getOriginalFilename();
+        // 截取文件后缀名 (结果: .jpg)
+        // 假设 originalFilename 不为空，这里简单处理，实际可用 Hutool 工具类
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        // String cloudFilePath = String.format("/test/%s",originalFilename);
+        // 生成全局唯一文件名，防止互相覆盖！
+        // 结果类似: 9b2d3c4e5f6a.jpg
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+        String uniqueFileName = uuid + extension;
+        // 拼装云端路径
+        // 结果类似: /test/9b2d3c4e5f6a.jpg
+        String cloudFilePath = String.format("/test/%s", uniqueFileName);
         File tempFile = null;
         try {
-            tempFile = File.createTempFile(filePath, null);
+            // 标准创建临时文件：前缀用UUID，后缀用真实后缀。
+            // 操作系统会在默认临时目录下生成类似：C:\Temp\9b2d3c4e5f6a8837482.jpg 的规范文件
+            tempFile = File.createTempFile(uuid, extension);
             multipartFile.transferTo(tempFile);
-            cosManager.putObject(filePath, tempFile);
-            return ResultUtils.success(filePath);
+            cosManager.putObject(cloudFilePath, tempFile);
+            return ResultUtils.success(cloudFilePath);
         } catch (IOException e) {
-            log.error("file upload error, filepath =" + filePath,  e);
+            log.error("文件上传失败, 路径: {}" ,cloudFilePath,  e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
         } finally {
             if (tempFile != null) {
                 boolean delete = tempFile.delete();
                 if (!delete) {
-                    log.error("file delete error, filepath = {}", tempFile.getAbsoluteFile());
+                    log.error("本地临时文件删除失败: {}", tempFile.getAbsoluteFile());
                 }
             }
         }
@@ -62,22 +77,26 @@ public class FileController {
 
     /**
      * 测试文件下载
-     * @param filepath cos中文件的路径
+     * @param cloudFilePath cos中文件的路径
      * @param response
      * @throws IOException
      */
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/test/download")
-    public void testDownloadFile(String filepath, HttpServletResponse response) throws IOException {
-        InputStream cosObjInputStream = cosManager.getObjectContent(filepath);
+    public void testDownloadFile(String cloudFilePath, HttpServletResponse response) throws IOException {
+        InputStream cosObjInputStream = cosManager.getObjectContent(cloudFilePath);
         try {
-            byte[] byteArray = IOUtils.toByteArray(cosObjInputStream);
+            // byte[] byteArray = IOUtils.toByteArray(cosObjInputStream);
             response.setContentType("application/octet-stream;charset=UTF-8");
-            response.setHeader("Content-Disposition", "attachment; filename=" + filepath);
-            response.getOutputStream().write(byteArray);
+            // cloudFilePath不是完整的 URL！它仅仅是那个相对路径，比如 /test/aaa.jpg
+            // 从 "/test/aaa.jpg" 中只截取出 "aaa.jpg"
+            String cloudFilePath1 = cloudFilePath.substring(cloudFilePath.lastIndexOf("/") + 1);
+            response.setHeader("Content-Disposition", "attachment; filename=" + cloudFilePath1);
+            // response.getOutputStream().write(byteArray);
+            StreamUtils.copy(cosObjInputStream, response.getOutputStream());
             response.getOutputStream().flush();
         } catch (IOException e) {
-            log.error("file download error, filepath =" + filepath, e);
+            log.error("file download error, cloudFilePath =" + cloudFilePath, e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "下载失败");
         } finally {
             if (cosObjInputStream != null) {

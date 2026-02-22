@@ -1,8 +1,10 @@
 package com.wyy.yunpicturebackend.model.vo;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.wyy.yunpicturebackend.model.entity.User;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -50,4 +52,13 @@ public class UserVO implements Serializable {
      * 创建时间
      */
     private Date createTime;
+
+    public static UserVO objToVO(User user) {
+        if (user == null){
+            return null;
+        }
+        UserVO userVO = new UserVO();
+        BeanUtil.copyProperties(user, userVO);
+        return userVO;
+    }
 }

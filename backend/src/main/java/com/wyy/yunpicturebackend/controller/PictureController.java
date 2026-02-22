@@ -92,7 +92,7 @@ public class PictureController {
                                                  UploadPictureRequest uploadPictureRequest,
                                                  HttpServletRequest request){
         User loginUser = userService.getLoginUser(request);
-        PictureVO pictureVO = pictureService.uploadPicture(multipartFile, uploadPictureRequest, loginUser);
+        PictureVO pictureVO = pictureService.uploadOrUpdatePicture(multipartFile, uploadPictureRequest, loginUser);
         return ResultUtils.success(pictureVO);
     }
 
@@ -108,7 +108,7 @@ public class PictureController {
                                                       HttpServletRequest request){
         User loginUser = userService.getLoginUser(request);
         String fileUrl = uploadPictureRequest.getFileUrl();
-        PictureVO pictureVO = pictureService.uploadPicture(fileUrl, uploadPictureRequest, loginUser);
+        PictureVO pictureVO = pictureService.uploadOrUpdatePicture(fileUrl, uploadPictureRequest, loginUser);
         return ResultUtils.success(pictureVO);
     }
 
@@ -137,12 +137,12 @@ public class PictureController {
     @PostMapping("/delete")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_DELETE)
     public BaseResponse<Boolean> deletePicture(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request){
-        User loginUser = userService.getLoginUser(request);
         //校验删除图片参数
         Long pictureId = deleteRequest.getId();
         if (deleteRequest != null && pictureId < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        User loginUser = userService.getLoginUser(request);
         pictureService.deletePicture(pictureId, loginUser);
         return ResultUtils.success(true);
     }
@@ -169,7 +169,7 @@ public class PictureController {
         Picture oldPicture = pictureService.getById(pictureId);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
         //详细校验
-        pictureService.validPicture(picture);
+        pictureService.validPictureParam(picture);
         //补充审核参数
         User loginUser = userService.getLoginUser(request);
         pictureService.fillPictureReviewParams(picture, loginUser);
@@ -188,12 +188,12 @@ public class PictureController {
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_EDIT)
     public BaseResponse<Boolean> editPicture(@RequestBody EditPictureRequest editPictureRequest,
                                              HttpServletRequest request){
-        //粗略校验
+        //粗略校验参数
         if (editPictureRequest == null || editPictureRequest.getId() < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);
-        pictureService.editPicture(editPictureRequest, loginUser);
+        pictureService.editPictureInfo(editPictureRequest, loginUser);
         return ResultUtils.success(true);
     }
 
@@ -209,7 +209,7 @@ public class PictureController {
                                              HttpServletRequest request){
         ThrowUtils.throwIf(editPictureByBatchRequest == null, ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
-        pictureService.editPictureByBatch(editPictureByBatchRequest, loginUser);
+        pictureService.editPictureInfoByBatch(editPictureByBatchRequest, loginUser);
         return ResultUtils.success(true);
     }
 

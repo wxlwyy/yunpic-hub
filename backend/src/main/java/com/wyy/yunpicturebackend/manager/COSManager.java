@@ -26,8 +26,8 @@ public class COSManager {
     private COSClient cosClient;
 
     /**
-     * 对象上传（图片，音频，视频，文档），通过本地文件的方式
-     * @param key cos中对象的路径（上传到指定路径，不用用户传）
+     * 上传对象（图片，音频，视频，文档），通过后端服务器的方式，是最基础的上传（只传文件，啥也不管）。没调用数据万象服务
+     * @param key cos中对象的路径（上传到指定路径，不用用户传，没有桶名等前缀）
      * @param localFile 本地文件
      * @return
      */
@@ -37,7 +37,7 @@ public class COSManager {
     }
 
     /**
-     * 对象下载（图片，音频，视频，文档），通过流的形式
+     * 下载对象（图片，音频，视频，文档），通过流的形式
      * @param key cos中对象的路径（从指定路径获取，需要用户传）
      * @return
      */
@@ -48,7 +48,8 @@ public class COSManager {
     }
 
     /**
-     * 上传图片，并返回基本信息
+     * 上传图片并自动处理，并返回基本信息，调用数据万象的 API 时，需要给腾讯云额外传一些特殊的请求头或参数（比如告诉腾讯云：
+     * 不仅帮我存起来，还要顺便帮我解析一下图片信息）。
      * @param key cos中对象的路径
      * @param localFile 本地文件
      * @return

@@ -7,8 +7,9 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+
+//@MapperScan("com.wyy.yunpicturebackend.mapper")  可以写在组件类上面，不是一定非得写在启动类上，写一个地方就可以
 @Configuration
-@MapperScan("com.wyy.yunpicturebackend.mapper")
 public class MybatisPlusConfig {
 
     /**

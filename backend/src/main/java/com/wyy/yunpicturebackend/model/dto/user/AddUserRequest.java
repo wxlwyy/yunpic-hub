@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import org.hibernate.validator.constraints.Length;
 
+import javax.validation.constraints.NotBlank;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -20,6 +22,8 @@ public class AddUserRequest implements Serializable {
     /**
      * 账号
      */
+    @NotBlank(message = "账号不能为空")
+    @Length(min = 4, message = "账号不能小于4位")
     private String userAccount;
 
     /**
