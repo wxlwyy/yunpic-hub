@@ -1,28 +1,51 @@
 <template>
   <div id="userLoginPage">
-    <h2 class="title">云图库-用户登录</h2>
-    <div class="desc">智能协同云图库</div>
-    <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit">
-      <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">
-        <a-input v-model:value="formState.userAccount" placeholder="请输入账号"/>
-      </a-form-item>
+    <div class="aurora-container">
+      <div class="aurora-blob aurora-1"></div>
+      <div class="aurora-blob aurora-2"></div>
+      <div class="aurora-blob aurora-3"></div>
+      <div class="aurora-blob aurora-4"></div>
+    </div>
 
-      <a-form-item
-        name="userPassword"
-        :rules="[
-          { required: true, message: '请输入密码' },
-          {min: 8, message: '密码不能小于8位'}
-        ]"
-      >
-        <a-input-password v-model:value="formState.userPassword" placeholder="请输入密码"/>
-      </a-form-item>
-      <div class="tips">
-        没有账号？<RouterLink to="/user/register">去注册</RouterLink>
+    <div class="login-card">
+      <div class="header">
+        <div class="logo-area">
+          <img src="@/assets/logo.png" alt="logo" class="logo" />
+          <h2 class="title">云图库</h2>
+        </div>
+        <div class="desc">智能协同 · 视觉资产管理专家</div>
       </div>
-      <a-form-item>
-        <a-button type="primary" html-type="submit" style="width: 100%">登录</a-button>
-      </a-form-item>
-    </a-form>
+
+      <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit">
+        <a-form-item name="userAccount" :rules="[{ required: true, message: '请输入账号' }]">
+          <a-input v-model:value="formState.userAccount" placeholder="账号" size="large" class="custom-input">
+            <template #prefix><user-outlined class="icon-color"/></template>
+          </a-input>
+        </a-form-item>
+
+        <a-form-item
+          name="userPassword"
+          :rules="[
+            { required: true, message: '请输入密码' },
+            { min: 8, message: '密码不能小于8位' }
+          ]"
+        >
+          <a-input-password v-model:value="formState.userPassword" placeholder="密码" size="large" class="custom-input">
+            <template #prefix><lock-outlined class="icon-color"/></template>
+          </a-input-password>
+        </a-form-item>
+
+        <div class="tips">
+          没有账号？<RouterLink to="/user/register" class="reg-link">立即注册</RouterLink>
+        </div>
+
+        <a-form-item>
+          <a-button type="primary" html-type="submit" class="login-button" size="large">
+            进入空间
+          </a-button>
+        </a-form-item>
+      </a-form>
+    </div>
   </div>
 </template>
 
@@ -32,12 +55,7 @@ import { userLoginUsingPost } from '@/api/userController.ts'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
 import { message } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
-
-interface FormState {
-  username: string
-  password: string
-  remember: boolean
-}
+import { UserOutlined, LockOutlined } from '@ant-design/icons-vue'
 
 const formState = reactive<API.UserLoginRequest>({
   userAccount: '',
@@ -47,47 +65,139 @@ const formState = reactive<API.UserLoginRequest>({
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
 
-/**
- * 提交表单
- * @param values
- */
 const handleSubmit = async (values: any) => {
   const res = await userLoginUsingPost(values)
-  if (res.data.code === 0 && res.data.data){
-    await loginUserStore.fetchLoginUser()  //登录成功，将登录的用户信息存储到全局状态中
-    message.success('登录成功')
-    router.push({
-      path: '/',
-      replace: true,
-    })
+  if (res.data.code === 0 && res.data.data) {
+    await loginUserStore.fetchLoginUser()
+    message.success('登录成功，欢迎进入空间')
+    router.push({ path: '/', replace: true })
   } else {
-    message.error('登录失败' + res.data.message)
+    message.error('验证失败：' + res.data.message)
   }
 }
-
 </script>
 
 <style scoped>
 #userLoginPage {
-  max-width: 360px;
-  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background-color: #f0f4f8;
+  overflow: hidden;
+}
+
+/* 惊艳核心：极光流体背景 */
+.aurora-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  filter: blur(80px); /* 增加模糊度，让颜色融合更自然 */
+}
+
+.aurora-blob {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: fluid 25s infinite alternate ease-in-out;
+}
+
+.aurora-1 { background: #00d2ff; top: -10%; left: -10%; }
+.aurora-2 { background: #92fe9d; bottom: -10%; right: -10%; animation-delay: -5s; }
+.aurora-3 { background: #ff758c; top: 40%; left: 30%; animation-delay: -10s; }
+.aurora-4 { background: #ff7eb3; bottom: 10%; left: 10%; animation-delay: -15s; }
+
+@keyframes fluid {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33% { transform: translate(50px, 100px) scale(1.1) rotate(120deg); }
+  66% { transform: translate(-30px, 50px) scale(0.9) rotate(240deg); }
+  100% { transform: translate(0, 0) scale(1) rotate(360deg); }
+}
+
+/* 登录卡片美化 */
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px); /* 强化毛玻璃 */
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 28px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  text-align: center; /* 确保文字区域整体居中 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.logo {
+  height: 42px;
 }
 
 .title {
-  text-align: center;
-  margin-bottom: 16px;
+  font-size: 30px;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #2c3e50, #3498db);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .desc {
-  text-align: center;
-  color: #bbb;
-  margin-bottom: 16px;
+  color: #7f8c8d;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.custom-input {
+  border-radius: 12px !important;
 }
 
 .tips {
-  font-size: 13px;
   text-align: right;
-  color: #bbb;
-  margin-bottom: 16px;
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 24px;
+}
+
+.reg-link {
+  color: #3498db;
+  font-weight: 600;
+}
+
+.login-button {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: #2c3e50; /* 深蓝灰色，高级沉稳 */
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
+}
+
+.login-button:hover {
+  background: #34495e;
+  transform: translateY(-2px);
 }
 </style>
