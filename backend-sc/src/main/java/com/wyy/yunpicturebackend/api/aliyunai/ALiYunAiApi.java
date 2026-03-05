@@ -25,6 +25,12 @@ public class ALiYunAiApi {
     @Value("${aliyunAi.apiKey}")
     private String apiKey;
 
+    /**
+     * 模型，例如 "image-out-painting"
+     */
+    @Value("${aliyunAi.model}")
+    private String model;
+
     //创建AI扩图任务请求的url
     public static final String CREATE_OUT_PAINTING_TASK_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/image2image/out-painting";
 
@@ -39,6 +45,10 @@ public class ALiYunAiApi {
     public CreateOutPaintingTaskResponse createOutPaintingTask(CreateOutPaintingTaskRequest createOutPaintingTaskRequest){
         //校验参数
         ThrowUtils.throwIf(createOutPaintingTaskRequest == null, ErrorCode.PARAMS_ERROR);
+        // 【关键修复】：如果请求里的 model 是空的，就用配置文件里的默认值
+        if (StrUtil.isBlank(createOutPaintingTaskRequest.getModel())) {
+            createOutPaintingTaskRequest.setModel(model);
+        }
         //发送请求
         HttpRequest httpRequest = HttpRequest.post(CREATE_OUT_PAINTING_TASK_URL)
                 .header(Header.CONTENT_TYPE, ContentType.JSON.getValue())
