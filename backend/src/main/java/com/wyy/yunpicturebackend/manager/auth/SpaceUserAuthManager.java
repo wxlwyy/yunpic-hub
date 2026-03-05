@@ -62,19 +62,19 @@ public class SpaceUserAuthManager {
     /**
      * 获取空间详情或图片详情时返回给前端权限列表，方便展示是否显示相关按钮
      * @param space
-     * @param loginUser
+     * @param currentUser
      * @return
      */
-    public List<String> getPermissionList(Space space, User loginUser) {
+    public List<String> getPermissionList(Space space, User currentUser) {
         // 未登录，没权限，不显示按钮
-        if (loginUser == null) {
+        if (currentUser == null) {
             return new ArrayList<>();
         }
         // 管理员权限
         List<String> ADMIN_PERMISSIONS = getPermissionKeyListByRoleKey(SpaceRoleEnum.ADMIN.getValue());
         // 公共图库（登录后）
         if (space == null) {
-            if (userService.isAdmin(loginUser)) {
+            if (userService.isAdmin(currentUser)) {
                 return ADMIN_PERMISSIONS;
             }
             return Collections.singletonList(SpaceUserPermissionConstant.PICTURE_VIEW);
@@ -87,7 +87,7 @@ public class SpaceUserAuthManager {
         switch (spaceTypeEnum) {
             case PRIVATE:
                 // 私有空间，仅本人或管理员有所有权限
-                if (space.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser)) {
+                if (space.getUserId().equals(currentUser.getId()) || userService.isAdmin(currentUser)) {
                     return ADMIN_PERMISSIONS;
                 } else {
                     return new ArrayList<>();
@@ -96,7 +96,7 @@ public class SpaceUserAuthManager {
                 // 团队空间，查询 SpaceUser 并获取角色和权限
                 SpaceUser spaceUser = spaceUserService.lambdaQuery()
                         .eq(SpaceUser::getSpaceId, space.getId())
-                        .eq(SpaceUser::getUserId, loginUser.getId())
+                        .eq(SpaceUser::getUserId, currentUser.getId())
                         .one();
                 if (spaceUser == null) {
                     return new ArrayList<>();

@@ -43,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -103,6 +104,7 @@ public class PictureController {
      * @return
      */
     @PostMapping("/upload/url")
+    @AuthCheck(requiredRole = "vip")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_UPLOAD)
     public BaseResponse<PictureVO> uploadPictureByUrl(@RequestBody UploadPictureRequest uploadPictureRequest,
                                                       HttpServletRequest request){
@@ -118,7 +120,7 @@ public class PictureController {
      * @param request
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/upload/batch")
     public BaseResponse<Integer> uploadPictureByBatch(@RequestBody UploadPictureByBatchRequest uploadPictureByBatchRequest,
                                                         HttpServletRequest request){
@@ -152,7 +154,7 @@ public class PictureController {
      * @param updatePictureRequest
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/update")
     public BaseResponse<Boolean> updatePicture(@RequestBody UpdatePictureRequest updatePictureRequest,
                                                HttpServletRequest request){
@@ -218,7 +220,7 @@ public class PictureController {
      * @param queryPictureRequest
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/list/page")
     public BaseResponse<Page<Picture>> listPictureByPage(@RequestBody QueryPictureRequest queryPictureRequest){
         //获取当前页，每页条数，查询条件
@@ -274,7 +276,7 @@ public class PictureController {
      * @param queryPictureRequest
      * @return
      */
-    @Deprecated
+    //@Deprecated
     @PostMapping("/list/page/vo/cache")
     public BaseResponse<Page<PictureVO>> listPictureVOByPageWithCache(@RequestBody QueryPictureRequest queryPictureRequest){
         //当前页，每页条数，查询条件
@@ -323,7 +325,7 @@ public class PictureController {
      * @param id
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     @GetMapping("/get")
     public BaseResponse<Picture> getPictureById(Long id){
         //校验参数
@@ -359,9 +361,24 @@ public class PictureController {
         }
         // 获取权限列表
         User loginUser = userService.getLoginUser(request);
+        // 1. 获取基础权限（此时公共图库普通用户拿到的是只读的 VIEW 权限）
         List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+
+// 2. 【关键】立刻转换成可写的 ArrayList，防止报错
+        List<String> mutablePermissionList = new ArrayList<>(permissionList);
+
+// 3. 【补充逻辑】判断是否为公共图库且是本人上传
+        if (space == null && loginUser != null && loginUser.getId().equals(picture.getUserId())) {
+            // 如果是本人，手动把编辑和删除权限加上去
+            if (!mutablePermissionList.contains(SpaceUserPermissionConstant.PICTURE_EDIT)) {
+                mutablePermissionList.add(SpaceUserPermissionConstant.PICTURE_EDIT);
+            }
+            if (!mutablePermissionList.contains(SpaceUserPermissionConstant.PICTURE_DELETE)) {
+                mutablePermissionList.add(SpaceUserPermissionConstant.PICTURE_DELETE);
+            }
+        }
         PictureVO pictureVO = pictureService.getPictureVO(picture);
-        pictureVO.setPermissionList(permissionList);
+        pictureVO.setPermissionList(mutablePermissionList);
         // 获取封装类
         return ResultUtils.success(pictureVO);
     }
@@ -373,8 +390,15 @@ public class PictureController {
     @GetMapping("/tag_category")
     public BaseResponse<PictureTagCategory> listPictureTagCategory(){
         PictureTagCategory pictureTagCategory = new PictureTagCategory();
-        List<String> tagList = Arrays.asList("热门", "搞笑", "生活", "高清", "艺术", "校园", "背景", "简历", "创意");
-        List<String> categoryList = Arrays.asList("模板", "电商", "表情包", "素材", "海报");
+        //List<String> categoryList = Arrays.asList("模板", "电商", "表情包", "素材", "海报");
+        List<String> categoryList = Arrays.asList("精选", "壁纸", "建筑", "3D渲染", "纹理");
+//        List<String> tagList = Arrays.asList("热门", "搞笑", "生活", "高清", "艺术", "校园", "背景", "简历", "创意");
+        List<String> tagList = Arrays.asList(
+                "数字抽象", "风景", "现代简约", "生态自然",
+                "季节", "超现实境", "韵律构图", "动态生活",
+                "室内设计", "科幻未来", "抽象美学", "海洋探索",
+                "植物", "微距视界", "古典历史"
+        );
         pictureTagCategory.setTagList(tagList);
         pictureTagCategory.setCategoryList(categoryList);
         return ResultUtils.success(pictureTagCategory);
@@ -386,7 +410,7 @@ public class PictureController {
      * @param request
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/review")
     public BaseResponse<Boolean> reviewPicture(@RequestBody ReviewPictureRequest reviewPictureRequest, HttpServletRequest request){
         ThrowUtils.throwIf(reviewPictureRequest == null, ErrorCode.PARAMS_ERROR);
@@ -400,6 +424,7 @@ public class PictureController {
      * @return
      */
     @PostMapping("/search/picture")
+    @AuthCheck(requiredRole = "vip")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_VIEW)
     public BaseResponse<List<ImageSearchResult>> searchPictureByPicture(@RequestBody SearchPictureByPictureRequest searchPictureByPictureRequest){
         ThrowUtils.throwIf(searchPictureByPictureRequest == null, ErrorCode.PARAMS_ERROR);
@@ -419,6 +444,7 @@ public class PictureController {
      */
     @PostMapping("/search/color")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_VIEW)
+    @AuthCheck(requiredRole = "vip")
     public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody SearchPictureByColorRequest searchPictureByColorRequest, HttpServletRequest request){
         ThrowUtils.throwIf(searchPictureByColorRequest == null, ErrorCode.PARAMS_ERROR);
         Long spaceId = searchPictureByColorRequest.getSpaceId();
@@ -436,6 +462,7 @@ public class PictureController {
      */
     @PostMapping("/out_painting/create_task")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_VIEW)
+    @AuthCheck(requiredRole = "vip")
     public BaseResponse<CreateOutPaintingTaskResponse> createPictureOutPaintingTask(
             @RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
             HttpServletRequest request){

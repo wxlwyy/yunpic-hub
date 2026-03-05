@@ -56,7 +56,7 @@ public class PictureEditEventWorkHandler implements WorkHandler<PictureEditEvent
                 PictureEditResponseMessage pictureEditResponseMessage = new PictureEditResponseMessage();
                 pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.ERROR.getValue());
                 pictureEditResponseMessage.setMessage("消息类型错误");
-                pictureEditResponseMessage.setUserVO(userService.getUserVO(user));
+                pictureEditResponseMessage.setUserVO(userService.convertToUserVO(user));
                 String pictureEditResponseMessageJson = objectMapper.writeValueAsString(pictureEditResponseMessage);
                 TextMessage textMessage = new TextMessage(pictureEditResponseMessageJson);
                 session.sendMessage(textMessage);

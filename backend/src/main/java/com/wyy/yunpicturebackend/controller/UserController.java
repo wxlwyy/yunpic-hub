@@ -61,10 +61,10 @@ public class UserController {
      * @param request 请求对象
      * @return 用户对象
      */
-    @GetMapping("/get/login")
+    @GetMapping("/get/login")  // 方法名叫getLoginUserVO更好
     public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request){
-        User user = userService.getLoginUser(request);
-        LoginUserVO loginUserVO = userService.getLoginUserVO(user);
+        User user = userService.getCurrentUser(request);
+        LoginUserVO loginUserVO = userService.convertToLoginUserVO(user);
         return ResultUtils.success(loginUserVO);
     }
 
@@ -101,8 +101,8 @@ public class UserController {
     public BaseResponse<Boolean> deleteUser(@Validated @RequestBody DeleteRequest deleteRequest,
                                             HttpServletRequest request){
         // 获取当前操作的管理员（为了防止他删掉自己信息）
-        User loginUser = userService.getLoginUser(request);
-        userService.deleteUser(deleteRequest, loginUser);
+        User currentUser = userService.getCurrentUser(request);
+        userService.deleteUser(deleteRequest, currentUser);
         return ResultUtils.success(true);
     }
 
@@ -142,7 +142,7 @@ public class UserController {
                                                   @Min(value = 1, message = "用户ID不合法")
                                                   Long id){
         User user = userService.getUserById(id);
-        UserVO userVO = userService.getUserVO(user);
+        UserVO userVO = userService.convertToUserVO(user);
         return ResultUtils.success(userVO);
     }
 
@@ -152,9 +152,9 @@ public class UserController {
      * @return 用户列表脱敏数据
      */
     @PostMapping("/list/page/vo")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)  // pageUserVO更好
     public BaseResponse<Page<UserVO>> getListUserVOByPage(@Validated @RequestBody QueryUserRequest queryUserRequest){
-        Page<UserVO> userVOPage = userService.getUserVOByPage(queryUserRequest);
+        Page<UserVO> userVOPage = userService.pageUserVO(queryUserRequest);
         return ResultUtils.success(userVOPage);
     }
 }

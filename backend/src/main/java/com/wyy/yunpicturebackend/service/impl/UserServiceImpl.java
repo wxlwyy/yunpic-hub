@@ -66,7 +66,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserName("user");
-        String encryptPassword = getEncryptPassword(userPassword);  //加密
+        String encryptPassword = encryptPassword(userPassword);  //加密
         user.setUserPassword(encryptPassword);
         user.setUserRole(UserRoleEnum.USER.getValue());
         boolean success = save(user);
@@ -81,7 +81,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return 加密后的密码
      */
     @Override
-    public String getEncryptPassword(String userPassword) {
+    public String encryptPassword(String userPassword) {
         final String SALT = "wyy";
         //使用spring框架的工具类加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -102,7 +102,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 //        ThrowUtils.throwIf(userAccount.length() < 4, ErrorCode.PARAMS_ERROR, "账号不能小于4位");
 //        ThrowUtils.throwIf(userPassword.length() < 8, ErrorCode.PARAMS_ERROR, "密码不能小于8位");
         // 业务校验
-        String encryptPassword = getEncryptPassword(userPassword);
+        String encryptPassword = encryptPassword(userPassword);
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.eq("userAccount", userAccount);
         userQueryWrapper.eq("userPassword", encryptPassword);
@@ -115,23 +115,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         StpKit.SPACE.login(user.getId());
         StpKit.SPACE.getSession().set(UserConstant.USER_LOGIN_STATE, user);
         //返回脱敏信息
-        return getLoginUserVO(user);
-    }
-
-
-    /**
-     * 对登录的用户信息进行脱敏（仅仅是一个 “数据转换器”（从 Entity 转换到 VO 的单一职责边界）。它的职责就是“翻译数据”，
-     * 而不是“做业务校验”。“输入是空，输出自然是空”，这在逻辑上是完美的。VO 转换）
-     * @param user 用户信息
-     * @return 脱敏后的用户信息
-     */
-    public LoginUserVO getLoginUserVO(User user) {
-        if (user == null) {
-            return null;
-        }
-        LoginUserVO loginUserVO = new LoginUserVO();
-        BeanUtil.copyProperties(user, loginUserVO);
-        return loginUserVO;
+        return convertToLoginUserVO(user);
     }
 
     /**
@@ -140,7 +124,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return 用户对象
      */
     @Override
-    public User getLoginUser(HttpServletRequest request) {
+    public User getCurrentUser(HttpServletRequest request) {
         //业务校验，判断session中是否有用户信息
         Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
         ThrowUtils.throwIf(userObj == null, ErrorCode.NOT_LOGIN_ERROR);
@@ -171,12 +155,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
+     * 对登录的用户信息进行脱敏（仅仅是一个 “数据转换器”（从 Entity 转换到 VO 的单一职责边界）。它的职责就是“翻译数据”，
+     * 而不是“做业务校验”。“输入是空，输出自然是空”，这在逻辑上是完美的。VO 转换）
+     * @param user 用户信息
+     * @return 脱敏后的用户信息
+     */
+    public LoginUserVO convertToLoginUserVO(User user) {
+        if (user == null) {
+            return null;
+        }
+        LoginUserVO loginUserVO = new LoginUserVO();
+        BeanUtil.copyProperties(user, loginUserVO);
+        return loginUserVO;
+    }
+
+    /**
      * 对用户信息（脱敏）
      * @param user 用户信息
      * @return 脱敏的用户信息
      */
     @Override
-    public UserVO getUserVO(User user) {
+    public UserVO convertToUserVO(User user) {
         if (user == null){
             return null;
         }
@@ -191,39 +190,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return 脱敏后的用户列表
      */
     @Override
-    public List<UserVO> getUserVOList(List<User> users) {
+    public List<UserVO> convertToUserVOList(List<User> users) {
         if (CollUtil.isEmpty(users)){
             return new ArrayList<>();
         }
-        List<UserVO> userVOList = users.stream().map(user -> getUserVO(user)).collect(Collectors.toList());
+        List<UserVO> userVOList = users.stream().map(user -> convertToUserVO(user)).collect(Collectors.toList());
         return userVOList;
-    }
-
-    /**
-     * 构造查询条件
-     * @param queryUserRequest 查询的数据
-     * @return 查询条件对象
-     */
-    @Override
-    public QueryWrapper<User> getQueryWrapper(QueryUserRequest queryUserRequest) {
-       ThrowUtils.throwIf(queryUserRequest == null, ErrorCode.PARAMS_ERROR, "请求参数为空");
-
-       String userName = queryUserRequest.getUserName();
-       String userProfile = queryUserRequest.getUserProfile();
-       String userRole = queryUserRequest.getUserRole();
-       String userAccount = queryUserRequest.getUserAccount();
-       Long id = queryUserRequest.getId();
-       String sortField = queryUserRequest.getSortField();
-       String sortOrder = queryUserRequest.getSortOrder();
-
-       QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-       userQueryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
-       userQueryWrapper.eq(StrUtil.isNotBlank(userRole), "userRole", userRole);
-       userQueryWrapper.eq(StrUtil.isNotBlank(userAccount), "userAccount", userAccount);
-       userQueryWrapper.like(StrUtil.isNotBlank(userName), "userName", userName);
-       userQueryWrapper.like(StrUtil.isNotBlank(userProfile), "userProfile", userProfile);
-       userQueryWrapper.orderBy(StrUtil.isNotBlank(sortField), sortOrder.equals("ascend"), sortField);
-       return userQueryWrapper;
     }
 
     /**
@@ -249,7 +221,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         BeanUtil.copyProperties(addUserRequest, user);
         //设置默认密码
         final String DEFAULT_PASSWORD = "12345678";
-        String encryptPassword = getEncryptPassword(DEFAULT_PASSWORD);
+        String encryptPassword = encryptPassword(DEFAULT_PASSWORD);
         user.setUserPassword(encryptPassword);
         boolean success = save(user);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
@@ -257,10 +229,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public void deleteUser(DeleteRequest deleteRequest, User loginUser) {
+    public void deleteUser(DeleteRequest deleteRequest, User currentUser) {
         // 1. 业务校验
         Long userId = deleteRequest.getId();
-        ThrowUtils.throwIf(userId.equals(loginUser.getId()), ErrorCode.PARAMS_ERROR, "管理员不能删除自己");
+        ThrowUtils.throwIf(userId.equals(currentUser.getId()), ErrorCode.PARAMS_ERROR, "管理员不能删除自己");
 
         // 2. 业务校验：防空删
         User oldUser = getById(userId);
@@ -307,23 +279,50 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return user;
     }
 
+    /**
+     * 构造查询条件
+     * @param queryUserRequest 查询的数据
+     * @return 查询条件对象
+     */
     @Override
-    public Page<UserVO> getUserVOByPage(QueryUserRequest queryUserRequest) {
+    public QueryWrapper<User> buildQueryWrapper(QueryUserRequest queryUserRequest) {
+        ThrowUtils.throwIf(queryUserRequest == null, ErrorCode.PARAMS_ERROR, "请求参数为空");
+
+        String userName = queryUserRequest.getUserName();
+        String userProfile = queryUserRequest.getUserProfile();
+        String userRole = queryUserRequest.getUserRole();
+        String userAccount = queryUserRequest.getUserAccount();
+        Long id = queryUserRequest.getId();
+        String sortField = queryUserRequest.getSortField();
+        String sortOrder = queryUserRequest.getSortOrder();
+
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.eq(ObjUtil.isNotNull(id), "id", id);
+        userQueryWrapper.eq(StrUtil.isNotBlank(userRole), "userRole", userRole);
+        userQueryWrapper.eq(StrUtil.isNotBlank(userAccount), "userAccount", userAccount);
+        userQueryWrapper.like(StrUtil.isNotBlank(userName), "userName", userName);
+        userQueryWrapper.like(StrUtil.isNotBlank(userProfile), "userProfile", userProfile);
+        userQueryWrapper.orderBy(StrUtil.isNotBlank(sortField), sortOrder.equals("ascend"), sortField);
+        return userQueryWrapper;
+    }
+
+    @Override
+    public Page<UserVO> pageUserVO(QueryUserRequest queryUserRequest) {
         long current = queryUserRequest.getCurrent();
         long pageSize = queryUserRequest.getPageSize();
 
         // 查询数据库
-        Page<User> userPage = page(new Page<>(current, pageSize), getQueryWrapper(queryUserRequest));
+        QueryWrapper<User> userQueryWrapper = buildQueryWrapper(queryUserRequest);
+        Page<User> userPage = page(new Page<>(current, pageSize), userQueryWrapper);
         // 拿到原始数据列表
         List<User> userList = userPage.getRecords();
-        // 构建新的 VO 分页对象
-        Page<UserVO> userVOPage = new Page<>(current, pageSize, userPage.getTotal());
         // 判断一下，如果查出来数据为空，直接返回空的分页对象，没必要去走脱敏逻辑了
         if (CollUtil.isEmpty(userList)) {
-            return userVOPage;
+            return new Page<>(current, pageSize);
         }
-        // 脱敏并塞回分页对象
-        List<UserVO> userVOList = getUserVOList(userList);
+        // 构建新的 VO 分页对象，脱敏并塞回分页对象
+        Page<UserVO> userVOPage = new Page<>(current, pageSize, userPage.getTotal());
+        List<UserVO> userVOList = convertToUserVOList(userList);
         userVOPage.setRecords(userVOList);
         return userVOPage;
     }

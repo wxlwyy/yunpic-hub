@@ -58,9 +58,9 @@ public class SpaceAnalyzeController {
         // 校验参数
         ThrowUtils.throwIf(spaceUsageAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 获取登录用户
-        User loginUser = userService.getLoginUser(request);
+        User currentUser = userService.getCurrentUser(request);
         // 调用获取空间分析的方法
-        SpaceUsageAnalyzeResponse spaceUsageAnalyzeResponse = spaceAnalyzeService.getSpaceUsageAnalyze(spaceUsageAnalyzeRequest, loginUser);
+        SpaceUsageAnalyzeResponse spaceUsageAnalyzeResponse = spaceAnalyzeService.getSpaceUsageAnalyze(spaceUsageAnalyzeRequest, currentUser);
         return ResultUtils.success(spaceUsageAnalyzeResponse);
     }
 
@@ -78,9 +78,9 @@ public class SpaceAnalyzeController {
         // 校验参数
         ThrowUtils.throwIf(spaceCategoryAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 获取登录用户
-        User loginUser = userService.getLoginUser(request);
+        User currentUser = userService.getCurrentUser(request);
         // 调用获取空间分析的方法
-        List<SpaceCategoryAnalyzeResponse> spaceCategoryAnalyzeResponses = spaceAnalyzeService.getSpaceCategoryAnalyze(spaceCategoryAnalyzeRequest, loginUser);
+        List<SpaceCategoryAnalyzeResponse> spaceCategoryAnalyzeResponses = spaceAnalyzeService.getSpaceCategoryAnalyze(spaceCategoryAnalyzeRequest, currentUser);
         return ResultUtils.success(spaceCategoryAnalyzeResponses);
     }
 
@@ -98,9 +98,9 @@ public class SpaceAnalyzeController {
         // 校验参数
         ThrowUtils.throwIf(spaceTagAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 获取登录用户
-        User loginUser = userService.getLoginUser(request);
+        User currentUser = userService.getCurrentUser(request);
         // 调用获取空间分析的方法
-        List<SpaceTagAnalyzeResponse> spaceTagAnalyzeResponses = spaceAnalyzeService.getSpaceTagAnalyze(spaceTagAnalyzeRequest, loginUser);
+        List<SpaceTagAnalyzeResponse> spaceTagAnalyzeResponses = spaceAnalyzeService.getSpaceTagAnalyze(spaceTagAnalyzeRequest, currentUser);
         return ResultUtils.success(spaceTagAnalyzeResponses);
     }
 
@@ -118,9 +118,9 @@ public class SpaceAnalyzeController {
         // 校验参数
         ThrowUtils.throwIf(spaceSizeAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 获取登录用户
-        User loginUser = userService.getLoginUser(request);
+        User currentUser = userService.getCurrentUser(request);
         // 调用获取空间分析的方法
-        List<SpaceSizeAnalyzeResponse> spaceSizeAnalyzeResponses = spaceAnalyzeService.getSpaceSizeAnalyze(spaceSizeAnalyzeRequest, loginUser);
+        List<SpaceSizeAnalyzeResponse> spaceSizeAnalyzeResponses = spaceAnalyzeService.getSpaceSizeAnalyze(spaceSizeAnalyzeRequest, currentUser);
         return ResultUtils.success(spaceSizeAnalyzeResponses);
     }
 
@@ -138,9 +138,9 @@ public class SpaceAnalyzeController {
         // 校验参数
         ThrowUtils.throwIf(spaceUserAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 获取登录用户
-        User loginUser = userService.getLoginUser(request);
+        User currentUser = userService.getCurrentUser(request);
         // 调用获取空间分析的方法
-        List<SpaceUserAnalyzeResponse> spaceUserAnalyzeResponses = spaceAnalyzeService.getSpaceUserAnalyze(spaceUserAnalyzeRequest, loginUser);
+        List<SpaceUserAnalyzeResponse> spaceUserAnalyzeResponses = spaceAnalyzeService.getSpaceUserAnalyze(spaceUserAnalyzeRequest, currentUser);
         return ResultUtils.success(spaceUserAnalyzeResponses);
     }
 
@@ -158,9 +158,9 @@ public class SpaceAnalyzeController {
         // 校验参数
         ThrowUtils.throwIf(spaceRankAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 获取登录用户
-        User loginUser = userService.getLoginUser(request);
+        User currentUser = userService.getCurrentUser(request);
         // 调用获取空间分析的方法
-        List<Space> spaceList = spaceAnalyzeService.getSpaceRankAnalyze(spaceRankAnalyzeRequest, loginUser);
+        List<Space> spaceList = spaceAnalyzeService.getSpaceRankAnalyze(spaceRankAnalyzeRequest, currentUser);
         return ResultUtils.success(spaceList);
     }
 }

@@ -55,7 +55,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
         pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.INFO.getValue());
         String message = String.format("%s加入编辑", user.getUserName());
         pictureEditResponseMessage.setMessage(message);
-        pictureEditResponseMessage.setUserVO(userService.getUserVO(user));
+        pictureEditResponseMessage.setUserVO(userService.convertToUserVO(user));
         // 广播给同一张图片的所有用户
         broadcastToPicture(pictureId, pictureEditResponseMessage);
     }
@@ -159,7 +159,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
             pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.ENTER_EDIT.getValue());
             String message = String.format("%s开始编辑图片", user.getUserName());
             pictureEditResponseMessage.setMessage(message);
-            pictureEditResponseMessage.setUserVO(userService.getUserVO(user));
+            pictureEditResponseMessage.setUserVO(userService.convertToUserVO(user));
             broadcastToPicture(pictureId, pictureEditResponseMessage);
         }
     }
@@ -190,7 +190,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
             String message = String.format("%s执行%s", user.getUserName(), pictureEditActionEnum.getText());
             pictureEditResponseMessage.setMessage(message);
             pictureEditResponseMessage.setEditAction(pictureEditActionEnum.getValue());
-            pictureEditResponseMessage.setUserVO(userService.getUserVO(user));
+            pictureEditResponseMessage.setUserVO(userService.convertToUserVO(user));
             // 广播（排除掉自己，否则会重复编辑）
             broadcastToPicture(pictureId, pictureEditResponseMessage, session);
         }
@@ -217,7 +217,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
             pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.EXIT_EDIT.getValue());
             String message = String.format("%s退出编辑图片", user.getUserName());
             pictureEditResponseMessage.setMessage(message);
-            pictureEditResponseMessage.setUserVO(userService.getUserVO(user));
+            pictureEditResponseMessage.setUserVO(userService.convertToUserVO(user));
             broadcastToPicture(pictureId, pictureEditResponseMessage);
         }
     }
@@ -250,7 +250,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
         pictureEditResponseMessage.setType(PictureEditMessageTypeEnum.INFO.getValue());
         String message = String.format("%s用户离开编辑", user.getUserName());
         pictureEditResponseMessage.setMessage(message);
-        pictureEditResponseMessage.setUserVO(userService.getUserVO(user));
+        pictureEditResponseMessage.setUserVO(userService.convertToUserVO(user));
         broadcastToPicture(pictureId, pictureEditResponseMessage);
     }
 }

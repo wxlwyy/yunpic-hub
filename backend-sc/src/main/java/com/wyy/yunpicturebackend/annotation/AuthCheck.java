@@ -13,5 +13,5 @@ public @interface AuthCheck {
      * 访问接口所需要的角色
      * @return
      */
-    String mustRole() default "";
+    String requiredRole() default "";
 }

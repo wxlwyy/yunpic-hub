@@ -79,6 +79,7 @@ const fetchData = async () => {
     dataList.value = res.data.data ?? []
     loading.value = false
   } else {
+    loading.value = false;
     message.error('获取数据失败，' + res.data.message)
   }
 }

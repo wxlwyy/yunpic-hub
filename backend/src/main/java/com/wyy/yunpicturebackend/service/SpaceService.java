@@ -3,7 +3,9 @@ package com.wyy.yunpicturebackend.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wyy.yunpicturebackend.model.dto.space.AddSpaceRequest;
+import com.wyy.yunpicturebackend.model.dto.space.EditSpaceRequest;
 import com.wyy.yunpicturebackend.model.dto.space.QuerySpaceRequest;
+import com.wyy.yunpicturebackend.model.dto.space.UpdateSpaceRequest;
 import com.wyy.yunpicturebackend.model.entity.Space;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.wyy.yunpicturebackend.model.entity.User;
@@ -30,21 +32,21 @@ public interface SpaceService extends IService<Space> {
      * @param space
      * @return
      */
-    SpaceVO getSpaceVO(Space space, HttpServletRequest request);
+    SpaceVO convertToSpaceVO(Space space, HttpServletRequest request);
 
     /**
      * 获取空间包装类（分页）
      * @param spacePage
      * @return
      */
-    Page<SpaceVO> getSpaceVOPage(Page<Space> spacePage);
+    Page<SpaceVO> convertToSpaceVOPage(Page<Space> spacePage);
 
     /**
      * 将查询条件封装为QueryWrapper对象
      * @param querySpaceRequest
      * @return
      */
-    QueryWrapper<Space> getQueryWrapper(QuerySpaceRequest querySpaceRequest);
+    QueryWrapper<Space> buildQueryWrapper(QuerySpaceRequest querySpaceRequest);
 
     /**
      * 根据空间级别自动填充空间限额数据
@@ -56,12 +58,18 @@ public interface SpaceService extends IService<Space> {
      * 创建空间
      * @return
      */
-    long addSpace(AddSpaceRequest addSpaceRequest, User loginUser);
+    long addSpace(AddSpaceRequest addSpaceRequest, User currentUser);
 
     /**
      * 校验访问空间的权限（仅本人或管理员可访问）
-     * @param loginUser
+     * @param currentUser
      * @param space
      */
-    void checkSpaceAuth(User loginUser, Space space);
+    void checkSpaceManageAuth(User currentUser, Space space);
+
+    boolean updateSpaceInfo(UpdateSpaceRequest updateSpaceRequest);
+
+    void deleteSpace(Long id, User currentUser);
+
+    boolean editSpace(EditSpaceRequest editSpaceRequest, User currentUser);
 }

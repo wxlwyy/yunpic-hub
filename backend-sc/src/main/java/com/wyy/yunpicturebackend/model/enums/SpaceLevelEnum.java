@@ -39,7 +39,7 @@ public enum SpaceLevelEnum {
      * @param value 空间等级
      * @return 空间等级枚举对象
      */
-    public static SpaceLevelEnum getSpaceLevelEnumByValue(Integer value){
+    public static SpaceLevelEnum getEnumByValue(Integer value){
         if (ObjUtil.isEmpty(value)){
             return null;
         }

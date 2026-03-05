@@ -39,7 +39,7 @@
       <a-form-item label="用户 id" name="userId">
         <a-input v-model:value="searchParams.userId" placeholder="请输入用户 id" allow-clear />
       </a-form-item>
-      <a-form-item>智能协同云图库
+      <a-form-item>
         <a-button type="primary" html-type="submit">搜索</a-button>
       </a-form-item>
     </a-form>

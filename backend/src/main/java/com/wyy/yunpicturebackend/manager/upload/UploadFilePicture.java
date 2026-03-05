@@ -12,10 +12,10 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class UploadFilePicture extends UploadPictureTemplate{
+public class UploadFilePicture extends UploadPictureTemplate<MultipartFile> {
     @Override
-    protected void validPicture(Object inputSource) {
-        MultipartFile multipartFile = (MultipartFile) inputSource;
+    protected void validPictureParam(MultipartFile multipartFile) {
+//        MultipartFile multipartFile = (MultipartFile) multipartFile;
         //是否为null
         ThrowUtils.throwIf(multipartFile == null, ErrorCode.PARAMS_ERROR, "文件不能为空");
         //要<=2MB
@@ -29,14 +29,14 @@ public class UploadFilePicture extends UploadPictureTemplate{
     }
 
     @Override
-    protected String getOriginFilename(Object inputSource) {
-        MultipartFile multipartFile = (MultipartFile) inputSource;
+    protected String getOriginFilename(MultipartFile multipartFile) {
+//        MultipartFile multipartFile = (MultipartFile) multipartFile;
         return multipartFile.getOriginalFilename();
     }
 
     @Override
-    protected void processTempFile(Object inputSource, File tempFile) throws Exception {
-        MultipartFile multipartFile = (MultipartFile) inputSource;
+    protected void processTempFile(MultipartFile multipartFile, File tempFile) throws Exception {
+//        MultipartFile multipartFile = (MultipartFile) multipartFile;
         multipartFile.transferTo(tempFile);
     }
 }

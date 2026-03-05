@@ -32,7 +32,7 @@ public interface UserService extends IService<User> {
      * @param userPassword 用户密码
      * @return 加密后的密码
      */
-    String getEncryptPassword(String userPassword);
+    String encryptPassword(String userPassword);
 
     /**
      * 用户登录
@@ -47,14 +47,14 @@ public interface UserService extends IService<User> {
      * @param user 用户信息
      * @return 脱敏后的用户信息
      */
-    LoginUserVO getLoginUserVO(User user);
+    LoginUserVO convertToLoginUserVO(User user);
 
     /**
      * 获取当前登录的用户信息
      * @param request 请求对象
      * @return 用户对象
      */
-    User getLoginUser(HttpServletRequest request);
+    User getCurrentUser(HttpServletRequest request);
 
     /**
      * 用户退出登录
@@ -68,21 +68,21 @@ public interface UserService extends IService<User> {
      * @param user 用户信息
      * @return 脱敏的用户信息
      */
-    UserVO getUserVO(User user);
+    UserVO convertToUserVO(User user);
 
     /**
      * 对用户列表进行脱敏
      * @param users 用户列表
      * @return 脱敏后的用户列表
      */
-    List<UserVO> getUserVOList(List<User> users);
+    List<UserVO> convertToUserVOList(List<User> users);
 
     /**
      * 将查询的数据封装为查询条件对象
      * @param queryUserRequest 查询的数据
      * @return 查询条件对象
      */
-    QueryWrapper<User> getQueryWrapper(QueryUserRequest queryUserRequest);
+    QueryWrapper<User> buildQueryWrapper(QueryUserRequest queryUserRequest);
 
     /**
      * 是否为管理员
@@ -93,11 +93,11 @@ public interface UserService extends IService<User> {
 
     Long addUser(AddUserRequest addUserRequest);
 
-    void deleteUser(DeleteRequest deleteRequest, User loginUser);
+    void deleteUser(DeleteRequest deleteRequest, User currentUser);
 
     Boolean updateUser(UpdateUserRequest updateUserRequest);
 
     User getUserById(Long id);
 
-    Page<UserVO> getUserVOByPage(QueryUserRequest queryUserRequest);
+    Page<UserVO> pageUserVO(QueryUserRequest queryUserRequest);
 }

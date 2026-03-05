@@ -86,7 +86,7 @@ const fetchTeamSpaceList = async () => {
   }
 }
 
-const menuItems = computed(() => {
+/*const menuItems = computed(() => {
   // 没有团队空间，只展示固定菜单
   if (teamSpaceList.value.length < 1) {
     return fixedMenuItems;
@@ -99,6 +99,33 @@ const menuItems = computed(() => {
       label: spaceVO?.spaceName,
     }
   })
+  const teamSpaceMenuGroup = {
+    type: 'group',
+    label: '我的团队',
+    key: 'teamSpace',
+    children: teamSpaceSubMenus,
+  }
+  return [...fixedMenuItems, teamSpaceMenuGroup]
+})*/
+const menuItems = computed(() => {
+  // 1. 先处理团队空间子菜单
+  const teamSpaceSubMenus = teamSpaceList.value
+    // 【关键】过滤掉无效数据，防止出现 undefined 的空气按钮
+    .filter(spaceUser => spaceUser.spaceId && spaceUser.spaceVO?.spaceName)
+    .map((spaceUser) => {
+      const spaceVO = spaceUser.spaceVO
+      return {
+        key: '/space/' + spaceUser.spaceId,
+        label: spaceVO.spaceName, // 既然上面过滤了，这里就不需要 ?. 了
+      }
+    })
+
+  // 2. 如果没有任何有效的团队空间，直接返回固定菜单
+  if (teamSpaceSubMenus.length === 0) {
+    return fixedMenuItems;
+  }
+
+  // 3. 正常拼接
   const teamSpaceMenuGroup = {
     type: 'group',
     label: '我的团队',

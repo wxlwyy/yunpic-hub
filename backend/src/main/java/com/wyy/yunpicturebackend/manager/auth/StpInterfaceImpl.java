@@ -74,11 +74,11 @@ public class StpInterfaceImpl implements StpInterface {
                 return ADMIN_PERMISSIONS;
             }
             // 获取 userId，且用户必须登录
-            User loginUser = (User) StpKit.SPACE.getSessionByLoginId(loginId).get(USER_LOGIN_STATE);
-            if (loginUser == null) {
+            User currentUser = (User) StpKit.SPACE.getSessionByLoginId(loginId).get(USER_LOGIN_STATE);
+            if (currentUser == null) {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "用户未登录");
             }
-            Long userId = loginUser.getId();
+            Long userId = currentUser.getId();
             // 优先从上下文中获取 SpaceUser 对象
             SpaceUser spaceUser = authContext.getSpaceUser();
             /*if (spaceUser != null) {
@@ -122,7 +122,7 @@ public class StpInterfaceImpl implements StpInterface {
                 spaceId = picture.getSpaceId();
                 // 公共图库，仅本人或管理员可操作
                 if (spaceId == null) {
-                    if (picture.getUserId().equals(userId) || userService.isAdmin(loginUser)) {
+                    if (picture.getUserId().equals(userId) || userService.isAdmin(currentUser)) {
                         return ADMIN_PERMISSIONS;
                     } else {
                         // 不是自己的图片，仅可查看
@@ -138,7 +138,7 @@ public class StpInterfaceImpl implements StpInterface {
             // 根据 Space 类型判断权限
             if (space.getSpaceType() == SpaceTypeEnum.PRIVATE.getValue()) {
                 // 私有空间，仅本人或管理员有权限
-                if (space.getUserId().equals(userId) || userService.isAdmin(loginUser)) {
+                if (space.getUserId().equals(userId) || userService.isAdmin(currentUser)) {
                     return ADMIN_PERMISSIONS;
                 } else {
                     return new ArrayList<>();

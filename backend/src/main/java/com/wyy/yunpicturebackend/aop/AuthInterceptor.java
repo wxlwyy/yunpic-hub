@@ -31,7 +31,7 @@ public class AuthInterceptor {
         RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
         HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
         // 获取登录角色，并校验是否登录
-        User user = userService.getLoginUser(request);
+        User user = userService.getCurrentUser(request);
 
         //判断当前方法需要的角色，没有要求则直接放行
         String mustRole = authCheck.mustRole();

@@ -81,7 +81,7 @@ public class UserController {
      * @return 用户id
      */
     @PostMapping("/add")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Long> addUser(@RequestBody AddUserRequest addUserRequest){
         ThrowUtils.throwIf(addUserRequest == null, ErrorCode.PARAMS_ERROR);
         User user = new User();
@@ -101,7 +101,7 @@ public class UserController {
      * @return 是否成功
      */
     @PostMapping("/delete")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest){
         ThrowUtils.throwIf(deleteRequest == null, ErrorCode.PARAMS_ERROR);
         boolean success = userService.removeById(deleteRequest.getId());
@@ -115,7 +115,7 @@ public class UserController {
      * @return 是否成功
      */
     @PostMapping("/update")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> updateUser(@RequestBody UpdateUserRequest updateUserRequest){
         ThrowUtils.throwIf(updateUserRequest == null, ErrorCode.PARAMS_ERROR);
         User user = new User();
@@ -131,7 +131,7 @@ public class UserController {
      * @return 用户数据
      */
     @GetMapping("/get")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<User> getUserById(Long id){
         ThrowUtils.throwIf(null == id || id < 0, ErrorCode.PARAMS_ERROR);
         User user = userService.getById(id);
@@ -158,7 +158,7 @@ public class UserController {
      * @return 用户列表脱敏数据
      */
     @PostMapping("/list/page/vo")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<UserVO>> getListUserVOByPage(@RequestBody QueryUserRequest queryUserRequest){
         int current = queryUserRequest.getCurrent();
         int pageSize = queryUserRequest.getPageSize();

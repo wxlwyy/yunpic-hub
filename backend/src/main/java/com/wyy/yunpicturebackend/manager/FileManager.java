@@ -118,7 +118,7 @@ public class FileManager {
     public UploadPictureResult uploadPictureByUrl(String fileUrl, String bizPath){
         //校验图片
         //validPicture(multipartFile);
-        validPictureByUrl(fileUrl);
+        validPictureUrl(fileUrl);
         //准备上传图片的路径   "yun-picture/public/001（用户Id）/2023-07-20_abcdefg.jpg"
         //准备文件名
         String projectName = "yun-picture";
@@ -127,13 +127,13 @@ public class FileManager {
         //String originalFilename = multipartFile.getOriginalFilename();
         String originalFilename = FileUtil.getName(fileUrl);
         String suffix = FileUtil.getSuffix(originalFilename);
-        String uploadFilename = String.format("%s_%s.%s", dateString, uuid, suffix);
+        String couldFilename = String.format("%s_%s.%s", dateString, uuid, suffix);
 
-        String cloudFilePath = String.format(projectName + "/%s/%s", bizPath, uploadFilename);
+        String cloudFilePath = String.format(projectName + "/%s/%s", bizPath, couldFilename);
         //通过本地图片上传
         File tempFile = null;
         try {
-            tempFile = File.createTempFile(cloudFilePath, null);
+            tempFile = File.createTempFile(uuid, "." + suffix);
             //multipartFile.transferTo(tempFile);
             HttpUtil.downloadFile(fileUrl, tempFile);
             PutObjectResult putObjectResult = cosManager.putPictureObject(cloudFilePath, tempFile);
@@ -158,14 +158,13 @@ public class FileManager {
         } finally {
             deleteTempFile(tempFile);
         }
-        //获取cos返回的部分图片信息
     }
 
     /**
      * 校验图片的url
      * @param fileUrl
      */
-    private void validPictureByUrl(String fileUrl) {
+    private void validPictureUrl(String fileUrl) {
         //验证参数合法性
         ThrowUtils.throwIf(StrUtil.isBlank(fileUrl), ErrorCode.PARAMS_ERROR, "文件地址不能为空");
         //验证url格式

@@ -21,9 +21,9 @@ public class PageRequest implements Serializable {
     /**
      * 页面信息条数
      */
-    // 必须大于0，且为了防止内存溢出，单页最多不允许超过 100 条！
+    // 必须大于0，且为了防止内存溢出，单页最多不允许超过 20 条！
     @Min(value = 1, message = "每页条数不合法")
-    @Max(value = 100, message = "单页请求条数过大")
+    @Max(value = 20, message = "单页请求条数过大")
     private int pageSize = 10;
 
     /**

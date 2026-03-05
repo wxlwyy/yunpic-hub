@@ -16,48 +16,48 @@ public interface SpaceAnalyzeService extends IService<Space> {
     /**
      * 获取空间使用率分析结果
      * @param spaceUsageAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
-    SpaceUsageAnalyzeResponse getSpaceUsageAnalyze(SpaceUsageAnalyzeRequest spaceUsageAnalyzeRequest, User loginUser);
+    SpaceUsageAnalyzeResponse getSpaceUsageAnalyze(SpaceUsageAnalyzeRequest spaceUsageAnalyzeRequest, User currentUser);
 
     /**
      * 获取空间图片分类分析
      * @param spaceCategoryAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
-    List<SpaceCategoryAnalyzeResponse> getSpaceCategoryAnalyze(SpaceCategoryAnalyzeRequest spaceCategoryAnalyzeRequest, User loginUser);
+    List<SpaceCategoryAnalyzeResponse> getSpaceCategoryAnalyze(SpaceCategoryAnalyzeRequest spaceCategoryAnalyzeRequest, User currentUser);
 
     /**
      * 获取空间标签分析结果
      * @param spaceTagAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
-    List<SpaceTagAnalyzeResponse> getSpaceTagAnalyze(SpaceTagAnalyzeRequest spaceTagAnalyzeRequest, User loginUser);
+    List<SpaceTagAnalyzeResponse> getSpaceTagAnalyze(SpaceTagAnalyzeRequest spaceTagAnalyzeRequest, User currentUser);
 
     /**
      * 获取空间图片大小范围分析结果
      * @param spaceSizeAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
-    List<SpaceSizeAnalyzeResponse> getSpaceSizeAnalyze(SpaceSizeAnalyzeRequest spaceSizeAnalyzeRequest, User loginUser);
+    List<SpaceSizeAnalyzeResponse> getSpaceSizeAnalyze(SpaceSizeAnalyzeRequest spaceSizeAnalyzeRequest, User currentUser);
 
     /**
      * 获取空间用户上传图片行为分析结果
      * @param spaceUserAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
-    List<SpaceUserAnalyzeResponse> getSpaceUserAnalyze(SpaceUserAnalyzeRequest spaceUserAnalyzeRequest, User loginUser);
+    List<SpaceUserAnalyzeResponse> getSpaceUserAnalyze(SpaceUserAnalyzeRequest spaceUserAnalyzeRequest, User currentUser);
 
     /**
      * 获取空间使用排行分析结果
      * @param spaceRankAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
-    List<Space> getSpaceRankAnalyze(SpaceRankAnalyzeRequest spaceRankAnalyzeRequest, User loginUser);
+    List<Space> getSpaceRankAnalyze(SpaceRankAnalyzeRequest spaceRankAnalyzeRequest, User currentUser);
 }

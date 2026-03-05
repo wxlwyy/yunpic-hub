@@ -21,6 +21,7 @@ import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.enums.SpaceLevelEnum;
 import com.wyy.yunpicturebackend.model.enums.SpaceRoleEnum;
 import com.wyy.yunpicturebackend.model.enums.SpaceTypeEnum;
+import com.wyy.yunpicturebackend.model.enums.UserRoleEnum;
 import com.wyy.yunpicturebackend.model.vo.PictureVO;
 import com.wyy.yunpicturebackend.model.vo.SpaceVO;
 import com.wyy.yunpicturebackend.model.vo.UserVO;
@@ -73,7 +74,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         ThrowUtils.throwIf(space == null, ErrorCode.PARAMS_ERROR);
         String spaceName = space.getSpaceName();
         Integer spaceLevel = space.getSpaceLevel();
-        SpaceLevelEnum spaceLevelEnum = SpaceLevelEnum.getSpaceLevelEnumByValue(spaceLevel);
+        SpaceLevelEnum spaceLevelEnum = SpaceLevelEnum.getEnumByValue(spaceLevel);
         Integer spaceType = space.getSpaceType();
         SpaceTypeEnum spaceTypeEnumByValue = SpaceTypeEnum.getSpaceTypeEnumByValue(spaceType);
         //创建空间
@@ -181,7 +182,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     @Override
     public void fillSpaceBySpaceLevel(Space space) {
         //根据空间级别自动填充空间限额数据
-        SpaceLevelEnum spaceLevelEnum = SpaceLevelEnum.getSpaceLevelEnumByValue(space.getSpaceLevel());
+        SpaceLevelEnum spaceLevelEnum = SpaceLevelEnum.getEnumByValue(space.getSpaceLevel());
         if (ObjUtil.isNotNull(spaceLevelEnum)) {
             if (ObjUtil.isNull(space.getMaxSize())) {
                 space.setMaxSize(spaceLevelEnum.getMaxSize());
@@ -197,7 +198,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
      * @return
      */
     @Override
-    public long addSpace(AddSpaceRequest addSpaceRequest, User loginUser) {
+    public long addSpace(AddSpaceRequest addSpaceRequest, User currentUser) {
         //创建空间时用户没写数据，填默认值
         if (StrUtil.isBlank(addSpaceRequest.getSpaceName())) {
             addSpaceRequest.setSpaceName("默认空间");
@@ -208,26 +209,28 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         if (addSpaceRequest.getSpaceType() == null) {
             addSpaceRequest.setSpaceType(SpaceTypeEnum.PRIVATE.getValue());
         }
+        boolean isAdmin = userService.isAdmin(currentUser);
+        UserRoleEnum userRoleEnum = UserRoleEnum.getEnumByValue(currentUser.getUserRole());
+        Integer spaceLevel = addSpaceRequest.getSpaceLevel();
+        // 管理员可创建任何等级的空间，VIP能创建普通和专业空间，普通用户只能创建普通空间
+        if (!(isAdmin || (UserRoleEnum.VIP.equals(userRoleEnum) && spaceLevel <= SpaceLevelEnum.PROFESSIONAL.getValue()) || (UserRoleEnum.USER.equals(userRoleEnum) && spaceLevel == SpaceLevelEnum.COMMON.getValue()))) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
+        }
         //数据转化
         Space space = new Space();
         BeanUtil.copyProperties(addSpaceRequest, space);
         //填充数据
         fillSpaceBySpaceLevel(space);
         //添加用户id
-        Long userId = loginUser.getId();
+        Long userId = currentUser.getId();
         space.setUserId(userId);
         //校验参数合法性
         validateSpaceParams(space, true);
         //校验权限（普通用户只能创建普通版，管理员可以创建任何版）
-        /*if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue() && !userService.isAdmin(loginUser)) {
+        /*if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue() && !userService.isAdmin(currentUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
         }*/
-        boolean isAdmin = userService.isAdmin(loginUser);
-        if (!isAdmin) {
-            if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue()) {
-                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
-            }
-        }
+
         //加锁，写入数据库
         String lock = String.valueOf(userId).intern();
         synchronized (lock) {
@@ -258,12 +261,12 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
 
     /**
      * 校验访问空间的权限（仅本人或管理员可访问）
-     * @param loginUser
+     * @param currentUser
      * @param space
      */
     @Override
-    public void checkSpaceAuth(User loginUser, Space space) {
-        if (!(space.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser))){
+    public void checkSpaceAuth(User currentUser, Space space) {
+        if (!(space.getUserId().equals(currentUser.getId()) || userService.isAdmin(currentUser))){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
     }

@@ -470,14 +470,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
      */
     @Override
     public Page<PictureVO> getPictureVOPage(Page<Picture> picturePage) {
-        //取出分页数据
+        //取出分页数据（MyBatis-Plus 查询出来的数据，即使一条都没有，它返回的也是一个“空集合（[]）”）
         List<Picture> pictureList = picturePage.getRecords();
-        //判断数据是否为空
-        if (pictureList == null) {
-            return null;
-        }
         //new一个包装page
         Page<PictureVO> pictureVOPage = new Page<>(picturePage.getCurrent(), picturePage.getSize(), picturePage.getTotal());
+        //判断数据是否为空
+        if (CollUtil.isEmpty(pictureList)) {
+            // 如果查不到图片，直接把刚才 new 好的、干净的空 Page 返回去！
+            // 这样前端就能正常拿到 {"records": [], "total": 0}，从而正常展示“暂无数据”的缺省图
+            return pictureVOPage;
+        }
         //把pictureList转为包装list
         List<PictureVO> pictureVOList = pictureList.stream().map(p -> PictureVO.objToVo(p)).collect(Collectors.toList());
         //关联用户信息，先查所有用户Id（放到set防止重复），用Id查出集合，用户信息绑定
@@ -552,9 +554,9 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.eq(ObjUtil.isNotEmpty(reviewStatus), "reviewStatus", reviewStatus);
         queryWrapper.eq(ObjUtil.isNotEmpty(reviewerId), "reviewerId", reviewerId);
         // >=
-        queryWrapper.ge(ObjUtil.isNotEmpty(startEditTime), "editTime", startEditTime);
+        queryWrapper.ge(ObjUtil.isNotEmpty(startEditTime), "createTime", startEditTime);
         // <
-        queryWrapper.lt(ObjUtil.isNotEmpty(endEditTime), "editTime", endEditTime);
+        queryWrapper.lt(ObjUtil.isNotEmpty(endEditTime), "createTime", endEditTime);
         if (CollUtil.isNotEmpty(tags)){
             tags.forEach(tag -> queryWrapper.like("tags", "\"" + tag + "\""));
         }

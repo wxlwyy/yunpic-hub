@@ -19,10 +19,10 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class UploadUrlPicture extends UploadPictureTemplate{
+public class UploadUrlPicture extends UploadPictureTemplate<String> {
     @Override
-    protected void validPicture(Object inputSource) {
-        String fileUrl = (String) inputSource;
+    protected void validPictureParam(String fileUrl) {
+//        String fileUrl = (String) fileUrl;
         //验证参数合法性
         ThrowUtils.throwIf(StrUtil.isBlank(fileUrl), ErrorCode.PARAMS_ERROR, "文件地址不能为空");
         //验证url格式
@@ -68,12 +68,12 @@ public class UploadUrlPicture extends UploadPictureTemplate{
 
     /**
      * 通过图片url获取原名
-     * @param inputSource
+     * @param fileUrl
      * @return
      */
     @Override
-    protected String getOriginFilename(Object inputSource) {
-        String fileUrl = (String) inputSource;
+    protected String getOriginFilename(String fileUrl) {
+//        String fileUrl = (String) fileUrl;
         int questionMarkIndex = fileUrl.indexOf("?");
         if (questionMarkIndex > -1) {
             fileUrl = fileUrl.substring(0, questionMarkIndex);
@@ -82,8 +82,8 @@ public class UploadUrlPicture extends UploadPictureTemplate{
     }
 
     @Override
-    protected void processTempFile(Object inputSource, File tempFile) {
-        String fileUrl = (String) inputSource;
+    protected void processTempFile(String fileUrl, File tempFile) {
+//        String fileUrl = (String) fileUrl;
         HttpUtil.downloadFile(fileUrl, tempFile);
     }
 }

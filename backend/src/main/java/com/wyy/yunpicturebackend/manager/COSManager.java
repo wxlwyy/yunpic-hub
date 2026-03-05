@@ -37,7 +37,7 @@ public class COSManager {
     }
 
     /**
-     * 下载对象（图片，音频，视频，文档），通过流的形式
+     * 通用下载对象（图片，音频，视频，文档），通过流的形式
      * @param key cos中对象的路径（从指定路径获取，需要用户传）
      * @return
      */
@@ -48,8 +48,8 @@ public class COSManager {
     }
 
     /**
-     * 上传图片并自动处理，并返回基本信息，调用数据万象的 API 时，需要给腾讯云额外传一些特殊的请求头或参数（比如告诉腾讯云：
-     * 不仅帮我存起来，还要顺便帮我解析一下图片信息）。
+     * 上传图片并自动处理规则（比如转格式、压缩），并返回基本信息，调用数据万象的 API 时，需要给腾讯云额外传一些特殊的请求头或参数
+     * （比如告诉腾讯云：不仅帮我存起来，还要顺便帮我解析一下图片信息）。
      * @param key cos中对象的路径
      * @param localFile 本地文件
      * @return
@@ -58,18 +58,18 @@ public class COSManager {
         PutObjectRequest putObjectRequest = new PutObjectRequest(cosClientConfig.getBucket(), key, localFile);
         //转化格式规则（转成webp格式）
         PicOperations.Rule compressRule = new PicOperations.Rule();
-        String webFileId = FileUtil.mainName(key) + ".webp";
+        String webpFilename = FileUtil.mainName(key) + ".webp";
         compressRule.setBucket(cosClientConfig.getBucket());
-        compressRule.setFileId(webFileId);
+        compressRule.setFileId(webpFilename);
         compressRule.setRule("imageMogr2/format/webp");
         ArrayList<PicOperations.Rule> ruleArrayList = new ArrayList<>();
         ruleArrayList.add(compressRule);
         //图片压缩规则
         if (localFile.length() > 20 * 1024L) {  //大于20kb的图片才进行压缩
             PicOperations.Rule thumbnailRule = new PicOperations.Rule();
-            String thumbnailFileId = FileUtil.mainName(key) + "_thumbnail." + FileUtil.getSuffix(key);
+            String thumbnailFilename = FileUtil.mainName(key) + "_thumbnail." + FileUtil.getSuffix(key);
             thumbnailRule.setBucket(cosClientConfig.getBucket());
-            thumbnailRule.setFileId(thumbnailFileId);
+            thumbnailRule.setFileId(thumbnailFilename);
             thumbnailRule.setRule(String.format("imageMogr2/thumbnail/%sx%s>", 256, 256));
             ruleArrayList.add(thumbnailRule);
         }

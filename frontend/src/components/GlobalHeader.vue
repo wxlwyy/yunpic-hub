@@ -69,8 +69,8 @@ const originItems = [
   },
   {
     key: '/add_picture',
-    label: '创建图片',
-    title: '创建图片',
+    label: '上传图片到公共图库',
+    title: '上传图片到公共图库',
   },
   {
     key: '/admin/userManage',
@@ -87,11 +87,11 @@ const originItems = [
     label: '空间管理',
     title: '空间管理',
   },
-  {
+  /*{
     key: 'others',
     label: h('a', { href: 'https://www.codefather.cn', target: '_blank' }, '编程导航'),
     title: '编程导航',
-  },
+  },*/
 ]
 
 //过滤菜单项

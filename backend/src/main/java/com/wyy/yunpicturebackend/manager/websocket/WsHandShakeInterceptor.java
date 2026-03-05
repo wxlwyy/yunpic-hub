@@ -50,13 +50,13 @@ public class WsHandShakeInterceptor implements HandshakeInterceptor {
             // 获取参数（图片id和用户）
             String pictureIdStr = servletRequest.getParameter("pictureId");
             Long pictureId = Long.valueOf(pictureIdStr);
-            User loginUser = userService.getLoginUser(servletRequest);
+            User currentUser = userService.getCurrentUser(servletRequest);
             // 基本校验和权限校验
             if (ObjUtil.isEmpty(pictureId)) {
                 log.error("缺少图片id，拒绝握手");
                 return false;
             }
-            if (ObjUtil.isEmpty(loginUser)) {
+            if (ObjUtil.isEmpty(currentUser)) {
                 log.error("用户未登录，拒绝握手");
                 return false;
             }
@@ -79,15 +79,15 @@ public class WsHandShakeInterceptor implements HandshakeInterceptor {
                     return false;
                 }
             }
-            List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+            List<String> permissionList = spaceUserAuthManager.getPermissionList(space, currentUser);
             if (!permissionList.contains(SpaceUserPermissionConstant.PICTURE_EDIT)) {
                 log.error("没有图片编辑权限，拒绝握手");
                 return false;
             }
             // 将数据放在attributes中
-            attributes.put("user", loginUser);
+            attributes.put("user", currentUser);
             attributes.put("pictureId", pictureId);
-            attributes.put("userId", loginUser.getId());
+            attributes.put("userId", currentUser.getId());
         }
         return true;
     }

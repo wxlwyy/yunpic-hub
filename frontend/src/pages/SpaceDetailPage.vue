@@ -10,7 +10,7 @@
           :href="`/add_picture?spaceId=${id}`"
           target="_blank"
         >
-          + 创建图片
+          + 上传图片到我的空间
         </a-button>
         <a-button
           v-if="canManageSpaceUser"
@@ -20,19 +20,19 @@
           :href="`/spaceUserManage/${id}`"
           target="_blank"
         >
-          成员管理
+          管理团队空间成员
         </a-button>
         <a-button
-          v-if="canManageSpaceUser"
+          v-if="canAnalyzeSpace"
           type="primary"
           ghost
           :icon="h(BarChartOutlined)"
           :href="`/space_analyze?spaceId=${id}`"
           target="_blank"
         >
-          空间分析
+          分析我的空间
         </a-button>
-        <a-button v-if="canEditPicture" :icon="h(EditOutlined)" @click="openBatchEditModal"> 批量编辑</a-button>
+        <a-button v-if="canEditPicture" :icon="h(EditOutlined)" @click="openBatchEditModal"> 批量编辑图片 </a-button>
         <a-tooltip
           :title="`占用空间 ${formatSize(space.totalSize)} / ${formatSize(space.maxSize)}`"
         >
@@ -85,7 +85,7 @@ import { ColorPicker } from 'vue3-colorpicker'
 import 'vue3-colorpicker/style.css'
 import { EditOutlined, BarChartOutlined, TeamOutlined } from '@ant-design/icons-vue'
 import BatchEditPictureModal from '@/components/BatchEditPictureModal.vue'
-import { SPACE_PERMISSION_ENUM, SPACE_TYPE_MAP } from '../constants/space.ts'
+import {SPACE_PERMISSION_ENUM, SPACE_TYPE_ENUM, SPACE_TYPE_MAP} from '../constants/space.ts'
 
 const props = defineProps<{
   id: string | number
@@ -100,7 +100,18 @@ function createPermissionChecker(permission: string) {
 }
 
 // 定义权限检查
-const canManageSpaceUser = createPermissionChecker(SPACE_PERMISSION_ENUM.SPACE_USER_MANAGE)
+// const canManageSpaceUser = createPermissionChecker(SPACE_PERMISSION_ENUM.SPACE_USER_MANAGE)
+// 修改团队成员管理的权限检查逻辑
+const canManageSpaceUser = computed(() => {
+  // 条件：是团队空间 && 拥有管理权限
+  const isTeamSpace = space.value.spaceType === SPACE_TYPE_ENUM.TEAM
+  const hasPermission = (space.value.permissionList ?? []).includes(SPACE_PERMISSION_ENUM.SPACE_USER_MANAGE)
+  return isTeamSpace && hasPermission
+})
+const canAnalyzeSpace = computed(() => {
+  // 只要有管理权限就能分析（个人空间的主人也有这个权限）
+  return (space.value.permissionList ?? []).includes(SPACE_PERMISSION_ENUM.SPACE_USER_MANAGE)
+})
 const canUploadPicture = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_UPLOAD)
 const canEditPicture = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_EDIT)
 const canDeletePicture = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_DELETE)
@@ -191,6 +202,7 @@ const handleColorSearch = async (color: string) => {
     total.value = data.length
     loading.value = false
   } else {
+    loading.value = false;
     message.error('获取数据失败，' + res.data.message)
   }
 }

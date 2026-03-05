@@ -48,20 +48,20 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
     /**
      * 校验空间分析权限
      * @param spaceAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      */
-    private void checkSpaceAnalyzeAuth(SpaceAnalyzeRequest spaceAnalyzeRequest, User loginUser) {
+    private void checkSpaceAnalyzeAuth(SpaceAnalyzeRequest spaceAnalyzeRequest, User currentUser) {
         // 分析全空间或公共空间
         if (spaceAnalyzeRequest.isQueryAll() || spaceAnalyzeRequest.isQueryPublic()) {
             // 权限校验，仅管理员可操作
-            ThrowUtils.throwIf(!userService.isAdmin(loginUser), ErrorCode.NO_AUTH_ERROR);
+            ThrowUtils.throwIf(!userService.isAdmin(currentUser), ErrorCode.NO_AUTH_ERROR);
         } else { // 分析单个空间
             Long spaceId = spaceAnalyzeRequest.getSpaceId();
             ThrowUtils.throwIf(spaceId == null || spaceId < 0, ErrorCode.PARAMS_ERROR);
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
             // 权限校验，仅本人或管理员可操作
-            spaceService.checkSpaceAuth(loginUser, space);
+            spaceService.checkSpaceManageAuth(currentUser, space);
         }
     }
 
@@ -89,17 +89,17 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
     /**
      * 获取空间使用率分析结果
      * @param spaceUsageAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
     @Override
-    public SpaceUsageAnalyzeResponse getSpaceUsageAnalyze(SpaceUsageAnalyzeRequest spaceUsageAnalyzeRequest, User loginUser) {
+    public SpaceUsageAnalyzeResponse getSpaceUsageAnalyze(SpaceUsageAnalyzeRequest spaceUsageAnalyzeRequest, User currentUser) {
         // 校验参数
         ThrowUtils.throwIf(spaceUsageAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 查询公共空间或全空间
         if (spaceUsageAnalyzeRequest.isQueryPublic() || spaceUsageAnalyzeRequest.isQueryAll()) {
             // 校验空间分析权限
-            checkSpaceAnalyzeAuth(spaceUsageAnalyzeRequest, loginUser);
+            checkSpaceAnalyzeAuth(spaceUsageAnalyzeRequest, currentUser);
             QueryWrapper<Picture> pictureQueryWrapper = new QueryWrapper<>();
             // 补充查询条件的范围
             fillSpaceAnalyzeQueryWrapper(spaceUsageAnalyzeRequest, pictureQueryWrapper);
@@ -128,7 +128,7 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
             // 校验分析空间权限
-            checkSpaceAnalyzeAuth(spaceUsageAnalyzeRequest, loginUser);
+            checkSpaceAnalyzeAuth(spaceUsageAnalyzeRequest, currentUser);
             SpaceUsageAnalyzeResponse spaceUsageAnalyzeResponse = new SpaceUsageAnalyzeResponse();
             Long totalSize = space.getTotalSize();
             Long maxSize = space.getMaxSize();
@@ -149,15 +149,15 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
     /**
      * 获取空间图片分类分析
      * @param spaceCategoryAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
     @Override
-    public List<SpaceCategoryAnalyzeResponse> getSpaceCategoryAnalyze(SpaceCategoryAnalyzeRequest spaceCategoryAnalyzeRequest, User loginUser) {
+    public List<SpaceCategoryAnalyzeResponse> getSpaceCategoryAnalyze(SpaceCategoryAnalyzeRequest spaceCategoryAnalyzeRequest, User currentUser) {
         // 校验参数
         ThrowUtils.throwIf(spaceCategoryAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 校验权限（仅管理员或本人可操作私人空间）
-        checkSpaceAnalyzeAuth(spaceCategoryAnalyzeRequest, loginUser);
+        checkSpaceAnalyzeAuth(spaceCategoryAnalyzeRequest, currentUser);
         // 填充查询范围
         QueryWrapper<Picture> pictureQueryWrapper = new QueryWrapper<>();
         fillSpaceAnalyzeQueryWrapper(spaceCategoryAnalyzeRequest, pictureQueryWrapper);
@@ -181,15 +181,15 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
     /**
      * 获取空间标签分析结果
      * @param spaceTagAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
     @Override
-    public List<SpaceTagAnalyzeResponse> getSpaceTagAnalyze(SpaceTagAnalyzeRequest spaceTagAnalyzeRequest, User loginUser) {
+    public List<SpaceTagAnalyzeResponse> getSpaceTagAnalyze(SpaceTagAnalyzeRequest spaceTagAnalyzeRequest, User currentUser) {
         // 校验参数
         ThrowUtils.throwIf(spaceTagAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 校验权限（仅管理员或本人可操作）
-        checkSpaceAnalyzeAuth(spaceTagAnalyzeRequest, loginUser);
+        checkSpaceAnalyzeAuth(spaceTagAnalyzeRequest, currentUser);
         // 补充查询条件范围
         QueryWrapper<Picture> pictureQueryWrapper = new QueryWrapper<>();
         fillSpaceAnalyzeQueryWrapper(spaceTagAnalyzeRequest, pictureQueryWrapper);
@@ -216,15 +216,15 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
     /**
      * 获取空间图片大小范围分析结果
      * @param spaceSizeAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
     @Override
-    public List<SpaceSizeAnalyzeResponse> getSpaceSizeAnalyze(SpaceSizeAnalyzeRequest spaceSizeAnalyzeRequest, User loginUser) {
+    public List<SpaceSizeAnalyzeResponse> getSpaceSizeAnalyze(SpaceSizeAnalyzeRequest spaceSizeAnalyzeRequest, User currentUser) {
         // 校验参数
         ThrowUtils.throwIf(spaceSizeAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 校验权限（仅管理员或本人可操作）
-        checkSpaceAnalyzeAuth(spaceSizeAnalyzeRequest, loginUser);
+        checkSpaceAnalyzeAuth(spaceSizeAnalyzeRequest, currentUser);
         // 补充查询条件
         QueryWrapper<Picture> pictureQueryWrapper = new QueryWrapper<>();
         fillSpaceAnalyzeQueryWrapper(spaceSizeAnalyzeRequest, pictureQueryWrapper);
@@ -250,17 +250,17 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
     /**
      * 获取空间用户上传图片行为分析结果
      * @param spaceUserAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
     @Override
-    public List<SpaceUserAnalyzeResponse> getSpaceUserAnalyze(SpaceUserAnalyzeRequest spaceUserAnalyzeRequest, User loginUser) {
+    public List<SpaceUserAnalyzeResponse> getSpaceUserAnalyze(SpaceUserAnalyzeRequest spaceUserAnalyzeRequest, User currentUser) {
         // 校验参数
         ThrowUtils.throwIf(spaceUserAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         String timeDimension = spaceUserAnalyzeRequest.getTimeDimension();
         ThrowUtils.throwIf(StrUtil.isBlank(timeDimension), ErrorCode.PARAMS_ERROR, "时间维度不能为空");
         // 校验权限（仅管理员或本人可操作）
-        checkSpaceAnalyzeAuth(spaceUserAnalyzeRequest, loginUser);
+        checkSpaceAnalyzeAuth(spaceUserAnalyzeRequest, currentUser);
         // 补充查询范围和用户id
         QueryWrapper<Picture> pictureQueryWrapper = new QueryWrapper<>();
         fillSpaceAnalyzeQueryWrapper(spaceUserAnalyzeRequest, pictureQueryWrapper);
@@ -297,15 +297,15 @@ public class SpaceAnalyzeServiceImpl extends ServiceImpl<SpaceMapper, Space>
     /**
      * 获取空间使用排行分析结果
      * @param spaceRankAnalyzeRequest
-     * @param loginUser
+     * @param currentUser
      * @return
      */
     @Override
-    public List<Space> getSpaceRankAnalyze(SpaceRankAnalyzeRequest spaceRankAnalyzeRequest, User loginUser) {
+    public List<Space> getSpaceRankAnalyze(SpaceRankAnalyzeRequest spaceRankAnalyzeRequest, User currentUser) {
         // 校验参数
         ThrowUtils.throwIf(spaceRankAnalyzeRequest == null, ErrorCode.PARAMS_ERROR);
         // 校验权限（仅管理员可操作）
-        ThrowUtils.throwIf(!userService.isAdmin(loginUser), ErrorCode.NO_AUTH_ERROR);
+        ThrowUtils.throwIf(!userService.isAdmin(currentUser), ErrorCode.NO_AUTH_ERROR);
         // 查询前N个空间
         QueryWrapper<Space> spaceQueryWrapper = new QueryWrapper<>();
         spaceQueryWrapper.select("id", "spaceName", "totalSize")

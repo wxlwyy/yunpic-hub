@@ -13,7 +13,9 @@ import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.manager.sharding.DynamicShardingManager;
 import com.wyy.yunpicturebackend.model.dto.space.AddSpaceRequest;
+import com.wyy.yunpicturebackend.model.dto.space.EditSpaceRequest;
 import com.wyy.yunpicturebackend.model.dto.space.QuerySpaceRequest;
+import com.wyy.yunpicturebackend.model.dto.space.UpdateSpaceRequest;
 import com.wyy.yunpicturebackend.model.entity.Picture;
 import com.wyy.yunpicturebackend.model.entity.Space;
 import com.wyy.yunpicturebackend.model.entity.SpaceUser;
@@ -34,10 +36,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -96,14 +95,14 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
      * @return
      */
     @Override
-    public SpaceVO getSpaceVO(Space space, HttpServletRequest request) {
+    public SpaceVO convertToSpaceVO(Space space, HttpServletRequest request) {
         //将数据转移
         SpaceVO spaceVO = SpaceVO.objToVo(space);
         //查出图片相关的User信息
         Long userId = spaceVO.getUserId();
         if (userId != null && userId > 0) {
             User user = userService.getById(userId);
-            UserVO userVO = userService.getUserVO(user);
+            UserVO userVO = userService.convertToUserVO(user);
             spaceVO.setUserVO(userVO);
         }
         return spaceVO;
@@ -115,7 +114,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
      * @return
      */
     @Override
-    public Page<SpaceVO> getSpaceVOPage(Page<Space> spacePage) {
+    public Page<SpaceVO> convertToSpaceVOPage(Page<Space> spacePage) {
         //取出分页数据
         List<Space> spaceList = spacePage.getRecords();
         //new一个包装page
@@ -137,7 +136,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
             if (userIdUserListMap.containsKey(userId)){
                 user = userIdUserListMap.get(userId).get(0);
             }
-            UserVO userVO = userService.getUserVO(user);
+            UserVO userVO = userService.convertToUserVO(user);
             spaceVO.setUserVO(userVO);
         });
         spaceVOPage.setRecords(spaceVOList);
@@ -150,7 +149,7 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
      * @return
      */
     @Override
-    public QueryWrapper<Space> getQueryWrapper(QuerySpaceRequest querySpaceRequest) {
+    public QueryWrapper<Space> buildQueryWrapper(QuerySpaceRequest querySpaceRequest) {
         QueryWrapper<Space> queryWrapper = new QueryWrapper<>();
         if (querySpaceRequest == null) {
             return queryWrapper;
@@ -193,40 +192,49 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
     }
 
     /**
+     * 校验访问空间的权限（仅本人或管理员可管理空间）
+     * @param currentUser
+     * @param oldSpace
+     */
+    @Override
+    public void checkSpaceManageAuth(User currentUser, Space oldSpace) {
+        if (!oldSpace.getUserId().equals(currentUser.getId()) && !userService.isAdmin(currentUser)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权删除该空间");
+        }
+    }
+
+    /**
      * 创建私有空间或团队空间
      * @return
      */
     @Override
-    public long addSpace(AddSpaceRequest addSpaceRequest, User loginUser) {
-        //创建空间时用户没写数据，填默认值
-        if (StrUtil.isBlank(addSpaceRequest.getSpaceName())) {
-            addSpaceRequest.setSpaceName("默认空间");
-        }
-        if (ObjUtil.isEmpty(addSpaceRequest.getSpaceLevel())) {
-            addSpaceRequest.setSpaceLevel(SpaceLevelEnum.COMMON.getValue());
-        }
-        if (addSpaceRequest.getSpaceType() == null) {
-            addSpaceRequest.setSpaceType(SpaceTypeEnum.PRIVATE.getValue());
-        }
-        //数据转化
+    public long addSpace(AddSpaceRequest addSpaceRequest, User currentUser) {
+        // 1. 数据转化（原封不动把前端的原始数据拷过来）
         Space space = new Space();
         BeanUtil.copyProperties(addSpaceRequest, space);
-        //填充数据
-        fillSpaceBySpaceLevel(space);
-        //添加用户id
-        Long userId = loginUser.getId();
+
+        // 2. 兜底默认值（只修改准备落库的 space 实体，绝不碰 request！）
+        if (StrUtil.isBlank(space.getSpaceName())) {
+            space.setSpaceName("默认空间");
+        }
+        if (space.getSpaceLevel() == null) {
+            space.setSpaceLevel(SpaceLevelEnum.COMMON.getValue());
+        }
+
+        // 3. 填充业务衍生数据
+        this.fillSpaceBySpaceLevel(space); // 根据刚刚确定的 Level 填充大小
+
+        // 4. 绑定当前操作人
+        Long userId = currentUser.getId();
         space.setUserId(userId);
-        //校验参数合法性
-        validateSpaceParams(space, true);
+
         //校验权限（普通用户只能创建普通版，管理员可以创建任何版）
-        /*if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue() && !userService.isAdmin(loginUser)) {
+        /*if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue() && !userService.isAdmin(currentUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
         }*/
-        boolean isAdmin = userService.isAdmin(loginUser);
-        if (!isAdmin) {
-            if (space.getSpaceLevel() != SpaceLevelEnum.COMMON.getValue()) {
-                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
-            }
+        boolean isAdmin = userService.isAdmin(currentUser);
+        if ( !( isAdmin || (!isAdmin && space.getSpaceLevel() == SpaceLevelEnum.COMMON.getValue()) )) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限创建指定级别的空间");
         }
         //加锁，写入数据库
         String lock = String.valueOf(userId).intern();
@@ -256,18 +264,55 @@ public class SpaceServiceImpl extends ServiceImpl<SpaceMapper, Space>
         }
     }
 
-    /**
-     * 校验访问空间的权限（仅本人或管理员可访问）
-     * @param loginUser
-     * @param space
-     */
     @Override
-    public void checkSpaceAuth(User loginUser, Space space) {
-        if (!(space.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser))){
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+    public void deleteSpace(Long spaceId, User currentUser) {
+        // 1. 查：必须先查库，不仅为了判断存不存在，更为了拿到“主人是谁”
+        Space oldSpace = this.getById(spaceId);
+        ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+
+        // 2. 验：核对操作管理权限 (抽取出的私有方法或默认方法)
+        this.checkSpaceManageAuth(currentUser, oldSpace);
+
+        // 3. 删：执行真正的删除逻辑
+        boolean success = this.removeById(spaceId);
+        ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR, "删除空间失败");
     }
 
+
+    @Override
+    public boolean updateSpaceInfo(UpdateSpaceRequest request) {
+        // 1. 转为实体类
+        Space space = new Space();
+        BeanUtil.copyProperties(request, space);
+
+        // 2. 根据新传进来的 0/1/2，直接在内存里重算容量
+        fillSpaceBySpaceLevel(space);
+
+        // 3. 唯一需要查数据库的地方：确保被更新的旧空间真的存在
+        Space oldSpace = this.getById(space.getId());
+        ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
+
+        // 4. 落库
+        return this.updateById(space);
+    }
+
+    @Override
+    public boolean editSpace(EditSpaceRequest request, User currentUser) {
+        // 1. 查旧数据（必须查，为了鉴权）
+        Space oldSpace = this.getById(request.getId());
+        ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+
+        // 2. 鉴权：是本人或者管理员才能编辑
+        this.checkSpaceManageAuth(currentUser, oldSpace);
+
+        // 3. 构造要更新的实体（只更新传过来的字段）
+        Space space = new Space();
+        BeanUtil.copyProperties(request, space);
+        space.setEditTime(new Date()); // 记录最后编辑时间
+
+        // 4. 落库
+        return this.updateById(space);
+    }
 
 }
 

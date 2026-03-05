@@ -21,7 +21,7 @@ import java.util.Date;
 import java.util.List;
 
 @Slf4j
-public abstract class UploadPictureTemplate {
+public abstract class UploadPictureTemplate<T> {
 
     @Resource
     private COSClientConfig cosClientConfig;
@@ -30,14 +30,14 @@ public abstract class UploadPictureTemplate {
     private COSManager cosManager;
 
     /**
-     * 上传图片模板方法
+     * 上传图片模板方法（上传图片到云服务返回图片基本信息）
      * @param inputSource 图片或图片的网络地址
-     * @param uploadPicturePrefix 路径前缀（一般是用户id，或者私有共有）
+     * @param bizPath 路径前缀（一般是用户id，或者私有共有）
      * @return
      */
-    public UploadPictureResult uploadPicture(Object inputSource, String uploadPicturePrefix){
+    public UploadPictureResult uploadPicture(T inputSource, String bizPath){
         // 校验图片
-        validPicture(inputSource);
+        validPictureParam(inputSource);
         //准备上传图片的路径   "yun-picture/public/001（用户Id）/2023-07-20_abcdefg.jpg"
         //准备文件名
         String projectName = "yun-picture";
@@ -47,25 +47,27 @@ public abstract class UploadPictureTemplate {
         String suffix = FileUtil.getSuffix(originFilename);
         String uploadFilename = String.format("%s_%s.%s", dateString, uuid, suffix);
 
-        String uploadPath = String.format(projectName + "/%s/%s", uploadPicturePrefix, uploadFilename);
+        String cloudPath = String.format(projectName + "/%s/%s", bizPath, uploadFilename);
         //通过本地图片上传
         File tempFile = null;
         try {
             tempFile = File.createTempFile("upload_", null);
             // todo
             processTempFile(inputSource, tempFile);
-            PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, tempFile);
+            PutObjectResult putObjectResult = cosManager.putPictureObject(cloudPath, tempFile);
             ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
             List<CIObject> objectList = putObjectResult.getCiUploadResult().getProcessResults().getObjectList();
-            if (CollUtil.isNotEmpty(objectList)) {
-                CIObject compressPicObject = objectList.get(0);
-                CIObject thumbnailPicObject = compressPicObject;
+            if (CollUtil.isNotEmpty(objectList)) {  // 多个处理结果
+                CIObject webpCiObject = objectList.get(0);  // 处理后的webp格式的图片
+                CIObject thumbnailPicObject = webpCiObject;  // 压缩的图片默认先是webp格式的图片
                 if (objectList.size() > 1) {
-                    thumbnailPicObject = objectList.get(1);
+                    thumbnailPicObject = objectList.get(1);  // 如果有压缩的图片则赋值
                 }
-                return getUploadPictureResult(originFilename, compressPicObject, thumbnailPicObject, imageInfo);
+                // 如果本次上传添加了规则，则返回构建处理后的图片结果
+                return buildUploadPictureResult(originFilename, webpCiObject, thumbnailPicObject, imageInfo);
             }
-            return getUploadPictureResult(originFilename, tempFile, uploadPath, imageInfo);
+            // 如果本次上传没添加规则，则返回本身的图片结果
+            return buildUploadPictureResult(originFilename, tempFile, cloudPath, imageInfo);
         } catch (Exception e) {
             log.error("图片上传失败", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "图片上传失败");
@@ -80,31 +82,32 @@ public abstract class UploadPictureTemplate {
      * 校验输入源（本地图片或url）
      * @param inputSource
      */
-    protected abstract void validPicture(Object inputSource);
+    protected abstract void validPictureParam(T inputSource);
 
     /**
      * 获取输入源的原始文件名
      * @param inputSource
      * @return
      */
-    protected abstract String getOriginFilename(Object inputSource);
+    protected abstract String getOriginFilename(T inputSource);
 
     /**
      * 处理输入源生成本地临时文件
      * @param inputSource
      * @param tempFile
      */
-    protected abstract void processTempFile(Object inputSource, File tempFile) throws Exception;
+    protected abstract void processTempFile(T inputSource, File tempFile) throws Exception;
 
     /**
      * 封装返回结果
      * @param originFilename
      * @param tempFile
-     * @param uploadPath
+     * @param cloudPath
      * @param imageInfo
      * @return
      */
-    private UploadPictureResult getUploadPictureResult(String originFilename, File tempFile, String uploadPath, ImageInfo imageInfo) {
+    private UploadPictureResult buildUploadPictureResult(String originFilename, File tempFile,
+                                                       String cloudPath, ImageInfo imageInfo) {
         int width = imageInfo.getWidth();
         int height = imageInfo.getHeight();
         double picScale = NumberUtil.round((width * 1.0 / height), 2).doubleValue();
@@ -117,16 +120,17 @@ public abstract class UploadPictureTemplate {
         uploadPictureResult.setPicName(FileUtil.mainName(originFilename));
         uploadPictureResult.setPicScale(picScale);
         uploadPictureResult.setPicSize(FileUtil.size(tempFile));
-        uploadPictureResult.setUrl("https://" + cosClientConfig.getHost() + "/" + uploadPath);
+        uploadPictureResult.setUrl("https://" + cosClientConfig.getHost() + "/" + cloudPath);
         uploadPictureResult.setPicColor(imageInfo.getAve());
         return uploadPictureResult;
     }
 
-    private UploadPictureResult getUploadPictureResult(String originFilename, CIObject compressPicObject, CIObject thumbnailPicObject, ImageInfo imageInfo) {
-        int width = compressPicObject.getWidth();
-        int height = compressPicObject.getHeight();
+    private UploadPictureResult buildUploadPictureResult(String originFilename, CIObject webpCiObject,
+                                                       CIObject thumbnailPicObject, ImageInfo imageInfo) {
+        int width = webpCiObject.getWidth();
+        int height = webpCiObject.getHeight();
         double picScale = NumberUtil.round((width * 1.0 / height), 2).doubleValue();
-        String format = compressPicObject.getFormat();
+        String format = webpCiObject.getFormat();
 
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
         uploadPictureResult.setPicWidth(width);
@@ -134,9 +138,9 @@ public abstract class UploadPictureTemplate {
         uploadPictureResult.setPicFormat(format);
         uploadPictureResult.setPicName(FileUtil.mainName(originFilename));
         uploadPictureResult.setPicScale(picScale);
-        uploadPictureResult.setPicSize(compressPicObject.getSize().longValue());
+        uploadPictureResult.setPicSize(webpCiObject.getSize().longValue());
         uploadPictureResult.setPicColor(imageInfo.getAve());
-        uploadPictureResult.setUrl("https://" + cosClientConfig.getHost() + "/" + compressPicObject.getKey());
+        uploadPictureResult.setUrl("https://" + cosClientConfig.getHost() + "/" + webpCiObject.getKey());
         uploadPictureResult.setThumbnailUrl("https://" + cosClientConfig.getHost() + "/" + thumbnailPicObject.getKey());
         return uploadPictureResult;
     }

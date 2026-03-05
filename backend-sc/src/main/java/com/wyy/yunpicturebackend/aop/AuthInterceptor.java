@@ -1,5 +1,6 @@
 package com.wyy.yunpicturebackend.aop;
 
+import cn.hutool.core.util.StrUtil;
 import com.wyy.yunpicturebackend.annotation.AuthCheck;
 import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
@@ -30,18 +31,23 @@ public class AuthInterceptor {
         //首先得确保登录状态：获取request对象，取出当前登录状态的用户信息，和枚举类比较
         RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
         HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
-        User user = userService.getLoginUser(request);
-        String loginRole = user.getUserRole();
-        UserRoleEnum loginRoleEnum = UserRoleEnum.getUserRoleEnumByValue(loginRole);
+//        UserRoleEnum loginRoleEnum = UserRoleEnum.getEnumByValue(currentUserRole);
         //判断当前方法需要的角色，没有要求则直接放行
-        String mustRole = authCheck.mustRole();
-        UserRoleEnum mustRoleEnum = UserRoleEnum.getUserRoleEnumByValue(mustRole);
-        if (mustRoleEnum == null){
+        String requiredRole = authCheck.requiredRole();
+        // 3. 如果注解没要求权限，直接放行
+        if (StrUtil.isBlank(requiredRole)) {
             return joinPoint.proceed();
         }
-        //当前方法所需的角色是管理员，当前登录的角色也是管理员
-        if (UserRoleEnum.ADMIN.getValue().equals(mustRole) && !UserRoleEnum.ADMIN.getValue().equals(loginRole)){
+        /*//当前方法所需的角色是管理员，当前登录的角色也是管理员
+        if (UserRoleEnum.ADMIN.getValue().equals(requiredRole) && !UserRoleEnum.ADMIN.getValue().equals(currentUserRole)){
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }*/
+        User user = userService.getLoginUser(request);
+        String currentUserRole = user.getUserRole();
+        int currentLevel = UserRoleEnum.getLevelByValue(currentUserRole);
+        int requiredLevel = UserRoleEnum.getLevelByValue(requiredRole);
+        if (currentLevel < requiredLevel) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "您的权限不足（仅限VIP或管理员使用）");
         }
         return joinPoint.proceed();
     }

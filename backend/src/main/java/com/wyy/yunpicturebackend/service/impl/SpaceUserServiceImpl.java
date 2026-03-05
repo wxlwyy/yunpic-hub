@@ -128,14 +128,14 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
         Long userId = spaceUser.getUserId();
         if (userId != null && userId > 0) {
             User user = userService.getById(userId);
-            UserVO userVO = userService.getUserVO(user);
+            UserVO userVO = userService.convertToUserVO(user);
             spaceUserVO.setUserVO(userVO);
         }
         // 关联查询空间信息
         Long spaceId = spaceUser.getSpaceId();
         if (spaceId != null && spaceId > 0) {
             Space space = spaceService.getById(spaceId);
-            SpaceVO spaceVO = spaceService.getSpaceVO(space, request);
+            SpaceVO spaceVO = spaceService.convertToSpaceVO(space, request);
             spaceUserVO.setSpaceVO(spaceVO);
         }
         return spaceUserVO;
@@ -171,7 +171,7 @@ public class SpaceUserServiceImpl extends ServiceImpl<SpaceUserMapper, SpaceUser
             }
             if (userIdUserListMap.containsKey(userId)) {
                 User user = userIdUserListMap.get(userId).get(0);
-                UserVO userVO = userService.getUserVO(user);
+                UserVO userVO = userService.convertToUserVO(user);
                 spaceUserVO.setUserVO(userVO);
             }
         });

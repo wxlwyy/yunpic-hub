@@ -89,7 +89,7 @@ public class SpaceController {
      * @param updateSpaceRequest
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/update")
     public BaseResponse<Boolean> updateSpace(@RequestBody UpdateSpaceRequest updateSpaceRequest,
                                                HttpServletRequest request){
@@ -156,7 +156,7 @@ public class SpaceController {
      * @param querySpaceRequest
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/list/page")
     public BaseResponse<Page<Space>> listSpaceByPage(@RequestBody QuerySpaceRequest querySpaceRequest){
         //获取当前页，每页条数，查询条件
@@ -199,7 +199,7 @@ public class SpaceController {
      * @param id
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
     @GetMapping("/get")
     public BaseResponse<Space> getSpaceById(Long id){
         //校验参数

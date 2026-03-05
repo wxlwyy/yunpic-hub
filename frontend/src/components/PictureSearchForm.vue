@@ -125,7 +125,7 @@ const dateRange = ref<[]>([])
  * @param dates
  * @param dateStrings
  */
-const onRangeChange = (dates: any[], dateStrings: string[]) => {
+/*const onRangeChange = (dates: any[], dateStrings: string[]) => {
   // 关键修改：先判断 dates 是否存在 (不为 null/undefined)
   // 再判断长度
   if (dates && dates.length >= 2) {
@@ -135,6 +135,18 @@ const onRangeChange = (dates: any[], dateStrings: string[]) => {
     // 只有 dates 为 null (清空) 时，才会走到这里
     searchParams.startEditTime = undefined
     searchParams.endEditTime = undefined
+  }
+}*/
+const onRangeChange = (dates: any[], dateStrings: string[]) => {
+  if (dates && dates.length >= 2) {
+    // 确保拿到的是 dayjs 对象并转为 Date
+    searchParams.startEditTime = dates[0].toDate()
+    searchParams.endEditTime = dates[1].toDate()
+  } else {
+    // 彻底清空，不留死角
+    dateRange.value = null
+    delete searchParams.startEditTime
+    delete searchParams.endEditTime
   }
 }
 
@@ -146,7 +158,7 @@ const rangePresets = ref([
 ])
 
 // 清理
-const doClear = () => {
+/*const doClear = () => {
   // 取消所有对象的值
   Object.keys(searchParams).forEach((key) => {
     searchParams[key] = undefined
@@ -154,6 +166,24 @@ const doClear = () => {
   // 日期筛选项单独清空，必须定义为空数组
   dateRange.value = []
   // 清空后重新搜索
+  props.onSearch?.(searchParams)
+}*/
+const doClear = () => {
+  // 1. 彻底重置 searchParams
+  // 不要只设为 undefined，最好直接给个空对象，防止 Proxy 内部还留着旧引用
+  Object.keys(searchParams).forEach((key) => {
+    delete searchParams[key]
+  })
+
+  // 2. 日期组件重置：用 null 而不是 []
+  // 很多 UI 框架清空时识别 null 更加准确
+  dateRange.value = null
+
+  // 3. 显式清空 searchParams 里的时间字段
+  searchParams.startEditTime = undefined
+  searchParams.endEditTime = undefined
+
+  // 4. 重新触发搜索
   props.onSearch?.(searchParams)
 }
 </script>

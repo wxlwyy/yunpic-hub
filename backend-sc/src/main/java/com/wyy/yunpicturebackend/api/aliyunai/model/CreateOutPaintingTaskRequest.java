@@ -3,6 +3,7 @@ package com.wyy.yunpicturebackend.api.aliyunai.model;
 import cn.hutool.core.annotation.Alias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.Serializable;
 
@@ -14,7 +15,8 @@ public class CreateOutPaintingTaskRequest implements Serializable {
     /**
      * 模型，例如 "image-out-painting"
      */
-    private String model = "image-out-painting";
+    private String model;
+//    private String model = "image-out-painting";
 
     /**
      * 输入图像信息

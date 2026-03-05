@@ -22,6 +22,7 @@ import com.wyy.yunpicturebackend.model.vo.SpaceVO;
 import com.wyy.yunpicturebackend.service.SpaceService;
 import com.wyy.yunpicturebackend.service.UserService;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -36,6 +37,7 @@ import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
 
 @RestController
 @RequestMapping("/space")
+@Validated
 public class SpaceController {
 
     @Resource
@@ -51,8 +53,8 @@ public class SpaceController {
     public BaseResponse<Long> addSpace(@RequestBody AddSpaceRequest addSpaceRequest, HttpServletRequest request){
         //校验参数
         ThrowUtils.throwIf(ObjUtil.isNull(addSpaceRequest), ErrorCode.PARAMS_ERROR);
-        User loginUser = userService.getLoginUser(request);
-        long newSpaceId = spaceService.addSpace(addSpaceRequest, loginUser);
+        User currentUser = userService.getCurrentUser(request);
+        long newSpaceId = spaceService.addSpace(addSpaceRequest, currentUser);
         return ResultUtils.success(newSpaceId);
     }
 
@@ -63,24 +65,9 @@ public class SpaceController {
      * @return
      */
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteSpace(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request){
-        //校验删除空间参数
-        Long spaceId = deleteRequest.getId();
-        if (deleteRequest != null && spaceId < 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        //查询空间是否存在
-        Space oldSpace = spaceService.getById(spaceId);
-        ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
-        //是本人或管理员
-        User user = userService.getLoginUser(request);
-        spaceService.checkSpaceAuth(user, oldSpace);
-        /*if (!(oldSpace.getUserId().equals(user.getId()) || userService.isAdmin(user))){
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }*/
-        //删除
-        boolean success = spaceService.removeById(spaceId);
-        ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR, "删除失败");
+    public BaseResponse<Boolean> deleteSpace(@Validated @RequestBody DeleteRequest deleteRequest, HttpServletRequest request){
+        User currentUser = userService.getCurrentUser(request);
+        spaceService.deleteSpace(deleteRequest.getId(), currentUser);
         return ResultUtils.success(true);
     }
 
@@ -91,29 +78,13 @@ public class SpaceController {
      */
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     @PostMapping("/update")
-    public BaseResponse<Boolean> updateSpace(@RequestBody UpdateSpaceRequest updateSpaceRequest,
-                                               HttpServletRequest request){
-        //粗略校验
-        if (updateSpaceRequest == null || updateSpaceRequest.getId() < 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        //转为实体类
-        Space space = new Space();
-        BeanUtil.copyProperties(updateSpaceRequest, space);
-        //自动填充数据
-        spaceService.fillSpaceBySpaceLevel(space);
-        //查看是否存在
-        Long spaceId = space.getId();
-        Space oldSpace = spaceService.getById(spaceId);
-        ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
-        //详细校验
-        spaceService.validateSpaceParams(space, false);
-        //补充审核参数
-        User loginUser = userService.getLoginUser(request);
-        //更新
-        boolean success = spaceService.updateById(space);
-        ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(true);
+    public BaseResponse<Boolean> updateSpace(@Validated @RequestBody UpdateSpaceRequest updateSpaceRequest){
+        // 校验
+//        if (updateSpaceRequest == null || updateSpaceRequest.getId() < 0) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+//        }
+        boolean success = spaceService.updateSpaceInfo(updateSpaceRequest);
+        return ResultUtils.success(success);
     }
 
     /**
@@ -122,33 +93,11 @@ public class SpaceController {
      * @return
      */
     @PostMapping("/edit")
-    public BaseResponse<Boolean> editSpace(@RequestBody EditSpaceRequest editSpaceRequest,
+    public BaseResponse<Boolean> editSpace(@Validated @RequestBody EditSpaceRequest editSpaceRequest,
                                              HttpServletRequest request){
-        //粗略校验
-        if (editSpaceRequest == null || editSpaceRequest.getId() < 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        //查看是否存在
-        Space oldSpace = spaceService.getById(editSpaceRequest.getId());
-        ThrowUtils.throwIf(oldSpace == null, ErrorCode.NOT_FOUND_ERROR);
-        //转为实体类，加上一个编辑字段
-        Space space = new Space();
-        BeanUtil.copyProperties(editSpaceRequest, space);
-        space.setEditTime(new Date());
-        //自动填充数据
-        spaceService.fillSpaceBySpaceLevel(space);
-        //详细校验
-        spaceService.validateSpaceParams(space, false);
-        //是否为本人或管理员
-        User loginUser = userService.getLoginUser(request);
-        spaceService.checkSpaceAuth(loginUser, oldSpace);
-        /*if (!(oldSpace.getUserId().equals(loginUser.getId()) || userService.isAdmin(loginUser)) ){
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }*/
-        //更新信息
-        boolean success = spaceService.updateById(space);
-        ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(true);
+        User currentUser = userService.getCurrentUser(request);
+        boolean success = spaceService.editSpace(editSpaceRequest, currentUser);
+        return ResultUtils.success(success);
     }
 
     /**
@@ -162,7 +111,7 @@ public class SpaceController {
         //获取当前页，每页条数，查询条件
         int current = querySpaceRequest.getCurrent();
         int pageSize = querySpaceRequest.getPageSize();
-        QueryWrapper<Space> queryWrapper = spaceService.getQueryWrapper(querySpaceRequest);
+        QueryWrapper<Space> queryWrapper = spaceService.buildQueryWrapper(querySpaceRequest);
         //查询
         Page<Space> spacePage = spaceService.page(new Page<>(current, pageSize), queryWrapper);
         return ResultUtils.success(spacePage);
@@ -179,12 +128,12 @@ public class SpaceController {
         int current = querySpaceRequest.getCurrent();
         int pageSize = querySpaceRequest.getPageSize();
 
-        QueryWrapper<Space> queryWrapper = spaceService.getQueryWrapper(querySpaceRequest);
+        QueryWrapper<Space> queryWrapper = spaceService.buildQueryWrapper(querySpaceRequest);
         Page<Space> spacePage = spaceService.page(new Page<>(current, pageSize), queryWrapper);
         //防爬
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
         //脱敏
-        Page<SpaceVO> spaceVOPage = spaceService.getSpaceVOPage(spacePage);
+        Page<SpaceVO> spaceVOPage = spaceService.convertToSpaceVOPage(spacePage);
         return ResultUtils.success(spaceVOPage);
     }
 
@@ -225,10 +174,10 @@ public class SpaceController {
         //是否存在
         ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR);
         //封装
-        SpaceVO spaceVO = spaceService.getSpaceVO(space, request);
+        SpaceVO spaceVO = spaceService.convertToSpaceVO(space, request);
         // 获取空间详情时返回给前端权限列表，方便展示是否显示相关按钮
-        User loginUser = userService.getLoginUser(request);
-        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
+        User currentUser = userService.getCurrentUser(request);
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space, currentUser);
         spaceVO.setPermissionList(permissionList);
         return ResultUtils.success(spaceVO);
     }

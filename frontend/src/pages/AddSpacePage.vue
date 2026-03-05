@@ -24,7 +24,7 @@
     </a-form>
     <a-card title="空间级别介绍">
       <a-typography-paragraph>
-        * 目前仅支持开通普通版，如需升级空间，请联系管理员
+        * 管理员可以创建任意类型的空间，VIP用户可以创建普通或专业类型的空间，普通用户只可以创建普通类型空间
 <!--        <a href="https://codefather.cn" target="_blank">程序员鱼皮</a>。-->
       </a-typography-paragraph>
       <a-typography-paragraph v-for="spaceLevel in spaceLevelList">
