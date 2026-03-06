@@ -1,141 +1,180 @@
 <template>
   <div id="homePage">
-    <!-- 搜索框 -->
-    <div class="search-bar">
-      <a-input-search
-        v-model:value="searchParams.searchText"
-        placeholder="输入图片名称或简介"
-        enter-button="搜索"
-        size="large"
-        @search="doSearch"
-      />
+    <div class="search-hero">
+      <div class="search-bar">
+        <a-input-search
+          v-model:value="searchParams.searchText"
+          placeholder="探索你的视觉灵感..."
+          enter-button="搜 索"
+          size="large"
+          @search="doSearch"
+        />
+      </div>
     </div>
-    <!--  分类和标签  -->
-    <a-tabs v-model:activeKey="selectedCategory" @change="doSearch">
-      <a-tab-pane key="all" tab="全部"></a-tab-pane>
-      <a-tab-pane v-for="category in categoryList" :key="category" :tab="category"></a-tab-pane>
-    </a-tabs>
-    <div class="tag-bar">
-      <span style="margin-right: 8px">标签：</span>
-      <a-space :size="[0, 8]" wrap>
-        <a-checkable-tag
-          v-for="(tag, index) in tagList"
-          :key="tag"
-          v-model:checked="selectedTagList[index]"
-          @change="doSearch"
-        >
-          {{ tag }}
-        </a-checkable-tag>
-      </a-space>
+
+    <div class="filter-wrapper">
+      <a-tabs
+        v-model:activeKey="selectedCategory"
+        @change="doSearch"
+        class="category-tabs"
+      >
+        <a-tab-pane key="all" tab="✨ 全部" />
+        <a-tab-pane v-for="category in categoryList" :key="category" :tab="category" />
+      </a-tabs>
+
+      <div class="tag-container">
+        <span class="tag-label">
+          <FilterOutlined style="margin-right: 4px" /> 筛选标签：
+        </span>
+        <a-space :size="[12, 12]" wrap>
+          <a-checkable-tag
+            v-for="(tag, index) in tagList"
+            :key="tag"
+            v-model:checked="selectedTagList[index]"
+            class="custom-checkable-tag"
+            @change="doSearch"
+          >
+            {{ tag }}
+          </a-checkable-tag>
+        </a-space>
+      </div>
     </div>
-    <!-- 图片列表 -->
-    <!-- 图片列表 -->
-    <PictureList :dataList="dataList" :loading="loading" />
-    <a-pagination
-      style="text-align: right"
-      v-model:current="searchParams.current"
-      v-model:pageSize="searchParams.pageSize"
-      :total="total"
-      @change="onPageChange"
-    />
+
+    <div class="picture-list-area">
+      <PictureList :dataList="dataList" :loading="loading" />
+
+      <div class="pagination-wrapper" v-if="total > 0">
+        <a-pagination
+          v-model:current="searchParams.current"
+          v-model:pageSize="searchParams.pageSize"
+          :total="Number(total)"
+          @change="onPageChange"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-//数据
-import { computed, onMounted, reactive, ref } from 'vue'
+import { FilterOutlined } from '@ant-design/icons-vue';
+import { onMounted, reactive, ref } from 'vue'
 import { listPictureTagCategoryUsingGet, listPictureVoByPageUsingPost } from '@/api/pictureController.ts'
 import { message } from 'ant-design-vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import PictureList from '@/components/PictureList.vue'
+
+const router = useRouter()
+const route = useRoute()
 
 const dataList = ref<API.PictureVO[]>([])
 const total = ref(0)
 const loading = ref(true)
 
-//搜索条件
+// 初始搜索条件：强制转换为 plain object 且确保类型正确
 const searchParams = reactive<API.QueryPictureRequest>({
-  current: 1,
-  pageSize: 12,
+  current: Number(route.query.current) || 1,
+  pageSize: Number(route.query.pageSize) || 12,
+  searchText: (route.query.searchText as string) || '',
 })
 
-//获取数据
+const selectedCategory = ref<string>((route.query.category as string) || 'all')
+const categoryList = ref<string[]>([])
+const tagList = ref<string[]>([])
+const selectedTagList = ref<boolean[]>([])
+
+// 更新 URL 的逻辑（把复杂对象转化成纯字符串，防止路由报错）
+const updateUrl = () => {
+  const tags = tagList.value.filter((_, i) => selectedTagList.value[i])
+  router.replace({
+    query: {
+      ...searchParams,
+      category: selectedCategory.value !== 'all' ? selectedCategory.value : undefined,
+      tags: tags.length > 0 ? tags.join(',') : undefined,
+    }
+  })
+}
+
+// 获取核心数据
 const fetchData = async () => {
   loading.value = true
-  //转换搜索参数
   const params = {
     ...searchParams,
     tags: [] as string[],
   }
-  if (selectedCategory.value !== 'all'){
+  if (selectedCategory.value !== 'all') {
     params.category = selectedCategory.value
   }
-  selectedTagList.value.forEach((useTag, index) => {
-    if (useTag) {
-      params.tags.push(tagList.value[index])
-    }
-  })
-  const res = await listPictureVoByPageUsingPost(params)
-  if (res.data.code === 0 && res.data.data) {
-    dataList.value = res.data.data.records ?? []   //dataList数据变化，页面图片数据立马刷新
-    total.value = res.data.data.total ?? 0  //total变了，pagination这个计算属性重新，更新total
-  } else {
-    message.error('数据获取失败' + res.data.message)
+  // 安全检查：确保 selectedTagList 已经初始化
+  if (selectedTagList.value.length > 0) {
+    selectedTagList.value.forEach((useTag, index) => {
+      if (useTag && tagList.value[index]) {
+        params.tags.push(tagList.value[index])
+      }
+    })
   }
-  loading.value = false
+
+  try {
+    const res = await listPictureVoByPageUsingPost(params)
+    if (res.data.code === 0 && res.data.data) {
+      dataList.value = res.data.data.records ?? []
+      total.value = res.data.data.total ?? 0
+    } else {
+      message.error('数据获取失败：' + res.data.message)
+    }
+  } catch (error) {
+    message.error('请求接口出错')
+  } finally {
+    loading.value = false
+  }
 }
 
-//页面挂载好之后获取数据
-onMounted(() => {
-  fetchData()
-})
-
-// 分页参数
-const onPageChange = (page, pageSize) => {
+const onPageChange = (page: number, pageSize: number) => {
   searchParams.current = page
   searchParams.pageSize = pageSize
+  updateUrl()
   fetchData()
 }
 
-//搜索
 const doSearch = () => {
-  //重置搜索条件
   searchParams.current = 1
+  updateUrl()
   fetchData()
 }
 
-const categoryList = ref<string[]>([])
-const selectedCategory = ref<string>('all')
-const tagList = ref<string[]>([])
-const selectedTagList = ref<string[]>([])
-//从后端获取标签和分类选项
 const getCategoryTagOptions = async () => {
-  const res = await listPictureTagCategoryUsingGet()
-  if (res.data.code === 0 && res.data.data) {
-    categoryList.value = res.data.data.categoryList ?? []
-    tagList.value = res.data.data.tagList ?? []
-  } else {
-    message.error('加载标签和分类选项失败' + res.data.message)
+  try {
+    const res = await listPictureTagCategoryUsingGet()
+    if (res.data.code === 0 && res.data.data) {
+      categoryList.value = res.data.data.categoryList ?? []
+      tagList.value = res.data.data.tagList ?? []
+
+      // 初始化标签勾选状态
+      const urlTags = (route.query.tags as string)?.split(',') || []
+      selectedTagList.value = tagList.value.map(tag => urlTags.includes(tag))
+
+      // 等标签初始化完后再拉取数据，防止标签过滤失效
+      await fetchData()
+    }
+  } catch (error) {
+    message.error('加载选项失败')
   }
 }
 
 onMounted(() => {
   getCategoryTagOptions()
 })
-
-
 </script>
 
 <style scoped>
-#homePage {
-
-}
-#homePage .search-bar{
-  max-width: 480px;
-  margin: 0 auto 16px;
-}
-#homePage .tag-bar{
-  margin-bottom: 16px;
-}
+/* 此处保留刚才那套精美的 CSS 即可 */
+.search-hero { padding: 40px 0 24px; text-align: center; }
+.search-bar { max-width: 600px; margin: 0 auto; transition: transform 0.3s; }
+.filter-wrapper { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); padding: 16px 24px; border-radius: 20px; border: 1px solid rgba(0, 0, 0, 0.05); margin-bottom: 32px; }
+:deep(.category-tabs .ant-tabs-nav) { margin-bottom: 16px !important; }
+:deep(.category-tabs .ant-tabs-tab) { font-size: 16px !important; font-weight: 500; }
+.tag-container { display: flex; align-items: flex-start; padding-top: 8px; border-top: 1px dashed rgba(0, 0, 0, 0.08); }
+.tag-label { flex-shrink: 0; color: #64748b; font-weight: 600; margin-top: 4px; font-size: 13px; }
+.custom-checkable-tag { padding: 4px 12px !important; font-size: 13px !important; border-radius: 8px !important; background: #f1f5f9 !important; border: 1px solid transparent !important; transition: all 0.2s !important; }
+:deep(.ant-tag-checkable-checked) { background: #3b82f6 !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+.pagination-wrapper { margin-top: 40px; display: flex; justify-content: flex-end; }
 </style>
-

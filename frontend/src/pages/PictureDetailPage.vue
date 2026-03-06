@@ -32,6 +32,7 @@
               <div class="panel-header">
                 <h2 class="pic-title">{{ picture.name ?? '未命名资产' }}</h2>
                 <div class="author-section">
+                  上传者：
                   <a-avatar :size="32" :src="picture.userVO?.userAvatar" class="avatar-shadow" />
                   <span class="author-name">{{ picture.userVO?.userName ?? '未知用户' }}</span>
                 </div>
