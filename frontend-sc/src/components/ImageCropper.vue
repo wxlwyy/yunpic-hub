@@ -182,5 +182,26 @@ defineExpose({ openModal })
 .vue-cropper { height: 450px !important; }
 .cropper-footer { display: flex; flex-direction: column; align-items: center; gap: 20px; }
 .tool-bar { padding: 12px 24px; background: #f8fafc; border-radius: 50px; border: 1px solid #e2e8f0; }
-.confirm-btn { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; font-weight: 700; color: #fff; }
+/* 保存修改按钮的增强样式 */
+.confirm-btn {
+  padding-left: 24px;
+  padding-right: 24px;
+  font-weight: 700;
+  /* 正常状态下的渐变蓝 */
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  border: none;
+  color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  transition: all 0.3s;
+}
+/* 关键修复：当按钮被禁用（锁定）时的样式 */
+.confirm-btn[disabled],
+.confirm-btn[disabled]:hover {
+  background: #f5f5f5 !important; /* 灰白底色 */
+  color: rgba(0, 0, 0, 0.25) !important; /* 暗淡文字 */
+  border: 1px solid #d9d9d9 !important; /* 灰色边框 */
+  box-shadow: none !important; /* 去掉阴影 */
+  cursor: not-allowed; /* 变成禁用图标 */
+  background-image: none !important; /* 强制去掉渐变 */
+}
 </style>
