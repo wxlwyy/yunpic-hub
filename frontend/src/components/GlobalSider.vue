@@ -1,18 +1,22 @@
 <template>
-  <div class="globalSider">
+  <div id="globalSider">
     <a-layout-sider
       v-if="loginUserStore.loginUser.id"
-      class="sider"
-      width="200"
+      class="sider-container"
+      width="220"
       breakpoint="lg"
       collapsed-width="0"
+      :trigger="null"
     >
-      <a-menu
-        mode="inline"
-        v-model:selectedKeys="current"
-        :items="menuItems"
-        @click="doMenuClick"
-      />
+      <div class="sider-wrapper">
+        <a-menu
+          mode="inline"
+          v-model:selectedKeys="current"
+          :items="menuItems"
+          @click="doMenuClick"
+          class="custom-menu"
+        />
+      </div>
     </a-layout-sider>
   </div>
 </template>
@@ -23,131 +27,125 @@ import { PictureOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons-v
 import { MenuProps, message } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
-import { userLogoutUsingPost } from '@/api/userController.ts'
 import { SPACE_TYPE_ENUM } from '@/constants/space.ts'
 import { listMyTeamSpaceUsingPost } from '@/api/spaceUserController.ts'
 
 const loginUserStore = useLoginUserStore()
+const router = useRouter()
 
-//const items = ref<MenuProps['items']>();
-
-// 菜单列表
+// 1. 核心菜单逻辑 (保留原有业务逻辑)
 const fixedMenuItems = [
-  {
-    key: '/',
-    label: '公共图库',
-    icon: () => h(PictureOutlined),
-  },
-  {
-    key: '/my_space',
-    label: '我的空间',
-    icon: () => h(UserOutlined),
-  },
-  {
-    key: '/add_space?type=' + SPACE_TYPE_ENUM.TEAM,
-    label: '创建团队',
-    icon: () => h(TeamOutlined),
-  },
+  { key: '/', label: '公共图库', icon: () => h(PictureOutlined) },
+  { key: '/my_space', label: '我的空间', icon: () => h(UserOutlined) },
+  { key: '/add_space?type=' + SPACE_TYPE_ENUM.TEAM, label: '创建团队', icon: () => h(TeamOutlined) },
 ]
 
-//过滤菜单项
-const filterOriginItems = (originItems = [] as MenuProps['items']) => {
-  return originItems?.filter((originItem) => {
-    if (originItem?.key.startsWith('/admin')) {
-      const loginUser = loginUserStore.loginUser
-      if (!loginUser || loginUser.userRole !== 'admin') {
-        return false
-      }
-    }
-    return true
-  })
-}
-
-const router = useRouter()
-//页面跳转
-const doMenuClick = ({ key }: { key: string }) => {
-  router.push(key)
-}
-// 当前选中菜单
-const current = ref<string[]>([])
-// 监听路由变化，更新当前选中菜单
-router.afterEach((to, from, failure) => {
-  current.value = [to.path]
-})
-
 const teamSpaceList = ref<API.SpaceUserVO[]>([])
-// 加载团队空间列表
 const fetchTeamSpaceList = async () => {
   const res = await listMyTeamSpaceUsingPost()
   if (res.data.code === 0 && res.data.data) {
     teamSpaceList.value = res.data.data
-  } else {
-    message.error('加载我的团队空间失败，' + res.data.message)
   }
 }
 
-/*const menuItems = computed(() => {
-  // 没有团队空间，只展示固定菜单
-  if (teamSpaceList.value.length < 1) {
-    return fixedMenuItems;
-  }
-  // 展示团队空间分组
-  const teamSpaceSubMenus = teamSpaceList.value.map((spaceUser) => {
-    const spaceVO = spaceUser.spaceVO
-    return {
-      key: '/space/' + spaceUser.spaceId,
-      label: spaceVO?.spaceName,
-    }
-  })
-  const teamSpaceMenuGroup = {
-    type: 'group',
-    label: '我的团队',
-    key: 'teamSpace',
-    children: teamSpaceSubMenus,
-  }
-  return [...fixedMenuItems, teamSpaceMenuGroup]
-})*/
 const menuItems = computed(() => {
-  // 1. 先处理团队空间子菜单
   const teamSpaceSubMenus = teamSpaceList.value
-    // 【关键】过滤掉无效数据，防止出现 undefined 的空气按钮
     .filter(spaceUser => spaceUser.spaceId && spaceUser.spaceVO?.spaceName)
-    .map((spaceUser) => {
-      const spaceVO = spaceUser.spaceVO
-      return {
-        key: '/space/' + spaceUser.spaceId,
-        label: spaceVO.spaceName, // 既然上面过滤了，这里就不需要 ?. 了
-      }
-    })
+    .map((spaceUser) => ({
+      key: '/space/' + spaceUser.spaceId,
+      label: spaceUser.spaceVO.spaceName,
+    }))
 
-  // 2. 如果没有任何有效的团队空间，直接返回固定菜单
-  if (teamSpaceSubMenus.length === 0) {
-    return fixedMenuItems;
-  }
+  if (teamSpaceSubMenus.length === 0) return fixedMenuItems;
 
-  // 3. 正常拼接
-  const teamSpaceMenuGroup = {
-    type: 'group',
-    label: '我的团队',
-    key: 'teamSpace',
-    children: teamSpaceSubMenus,
-  }
-  return [...fixedMenuItems, teamSpaceMenuGroup]
+  return [
+    ...fixedMenuItems,
+    { type: 'divider' }, // 增加一条分割线增加呼吸感
+    {
+      type: 'group',
+      label: '我的团队',
+      key: 'teamSpace',
+      children: teamSpaceSubMenus,
+    }
+  ]
 })
 
-/**
- * 监听变量，任何变量改变时触发数据的重新加载
- */
+const current = ref<string[]>([])
+router.afterEach((to) => { current.value = [to.path] })
+
+const doMenuClick = ({ key }: { key: string }) => { router.push(key) }
+
 watchEffect(() => {
-  // 登录才加载
-  if (loginUserStore.loginUser.id) {
-    fetchTeamSpaceList()
-  }
+  if (loginUserStore.loginUser.id) fetchTeamSpaceList()
 })
 </script>
 
 <style scoped>
-#globalSider .ant-layout-sider {
-  background: none;
+/* 侧边栏整体容器 */
+.sider-container {
+  background: transparent !important;
+  height: calc(100vh - 64px); /* 减去顶部导航高度 */
+}
+
+.sider-wrapper {
+  padding: 16px 12px;
+  height: 100%;
+}
+
+/* 彻底重构 Ant Design 菜单样式 */
+.custom-menu {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* 每一个菜单项的基础样式 */
+:deep(.ant-menu-item) {
+  height: 44px !important;
+  line-height: 44px !important;
+  margin-bottom: 4px !important;
+  border-radius: 12px !important; /* 胶囊形状 */
+  color: #64748b !important; /* 默认未选中的灰蓝色 */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 菜单项悬浮状态 */
+:deep(.ant-menu-item:hover) {
+  color: #3b82f6 !important;
+  background-color: rgba(59, 130, 246, 0.08) !important;
+}
+
+/* 核心：菜单项选中状态 (高亮) */
+:deep(.ant-menu-item-selected) {
+  color: #fff !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  font-weight: 600;
+}
+
+/* 选中时的图标颜色 */
+:deep(.ant-menu-item-selected .anticon) {
+  color: #fff !important;
+}
+
+/* 菜单组标题样式 (我的团队) */
+:deep(.ant-menu-item-group-title) {
+  color: #94a3b8 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 16px;
+  padding-left: 16px !important;
+}
+
+/* 分割线样式 */
+:deep(.ant-menu-divider) {
+  margin: 12px 16px;
+  border-color: rgba(0, 0, 0, 0.04);
+}
+
+/* 针对图标大小的微调 */
+:deep(.ant-menu-item .anticon) {
+  font-size: 16px;
 }
 </style>
