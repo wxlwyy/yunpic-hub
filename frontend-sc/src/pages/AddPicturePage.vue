@@ -1,37 +1,108 @@
 <template>
   <div id="addPicturePage">
-    <h2 style="margin-bottom: 16px">
-      {{ route.query?.id ? '修改图片' : '创建图片' }}
-    </h2>
-    <a-typography-paragraph v-if="spaceId" type="secondary">
-      保存至空间：<a :href="`/space/${spaceId}`" target="_blank">{{ spaceId }}</a>
-    </a-typography-paragraph>
-    <!-- 选择上传方式 -->
-    <a-tabs v-model:activeKey="uploadType">
-      <a-tab-pane key="file" tab="文件上传">
-        <!--  图片上传组件  -->
-        <PictureUpload :picture="picture" :spaceId="spaceId" :onSuccess="onSuccess" />
-      </a-tab-pane>
-      <a-tab-pane key="url" tab="URL 上传" force-render>
-        <!--  Url图片上传组件  -->
-        <UrlPictureUpload :picture="picture" :spaceId="spaceId" :onSuccess="onSuccess" />
-      </a-tab-pane>
-    </a-tabs>
-    <!--  编辑图片样式弹窗和AI扩图弹窗  -->
-    <div v-if="picture" class="edit-bar">
-      <a-space size="middle">
-        <a-button :icon="h(EditOutlined)" @click="doEditPicture">编辑图片</a-button>
-        <a-button type="primary" ghost :icon="h(FullscreenOutlined)" @click="doImagePainting">
-          AI 扩图
-        </a-button>
-      </a-space>
-      <ImageOutPainting
-        ref="imageOutPaintingRef"
-        :picture="picture"
-        :spaceId="spaceId"
-        :onSuccess="onImageOutPaintingSuccess"
-      />
+    <div class="page-header">
+      <h2 class="page-title">
+        <component :is="route.query?.id ? 'EditOutlined' : 'PlusCircleOutlined'" class="title-icon" />
+        {{ route.query?.id ? '编辑图片详情' : '创作新图片' }}
+      </h2>
+      <a-typography-paragraph v-if="spaceId" class="space-badge">
+        <RocketOutlined /> 归属空间：
+        <a :href="`/space/${spaceId}`" target="_blank">#{{ spaceId }}</a>
+      </a-typography-paragraph>
     </div>
+
+    <div class="studio-container">
+      <section class="studio-section upload-card">
+        <div class="section-label">01 媒体素材</div>
+        <a-tabs v-model:activeKey="uploadType" class="modern-tabs">
+          <a-tab-pane key="file">
+            <template #tab>
+              <span><FileImageOutlined /> 文件上传</span>
+            </template>
+            <PictureUpload :picture="picture" :spaceId="spaceId" :onSuccess="onSuccess" />
+          </a-tab-pane>
+          <a-tab-pane key="url" force-render>
+            <template #tab>
+              <span><LinkOutlined /> URL 抓取</span>
+            </template>
+            <UrlPictureUpload :picture="picture" :spaceId="spaceId" :onSuccess="onSuccess" />
+          </a-tab-pane>
+        </a-tabs>
+
+        <transition name="fade-slide">
+          <div v-if="picture" class="smart-edit-bar">
+            <div class="bar-content">
+              <a-button class="tool-btn" @click="doEditPicture">
+                <template #icon><EditOutlined /></template> 专业裁剪
+              </a-button>
+              <div class="divider"></div>
+              <a-button type="primary" ghost class="tool-btn ai-btn" @click="doImagePainting">
+                <template #icon><FullscreenOutlined /></template> AI 智能扩图
+              </a-button>
+            </div>
+          </div>
+        </transition>
+      </section>
+
+      <transition name="fade-slide">
+        <section v-if="picture" class="studio-section info-card">
+          <div class="section-label">02 属性定义</div>
+          <a-form layout="vertical" :model="pictureForm" @finish="handleSubmit" class="modern-form">
+            <a-row :gutter="24">
+              <a-col :span="24">
+                <a-form-item label="图片名称" name="name" :rules="[{ required: true, message: '请给作品起个名字' }]">
+                  <a-input v-model:value="pictureForm.name" placeholder="输入名称" class="modern-input" />
+                </a-form-item>
+              </a-col>
+              <a-col :span="24">
+                <a-form-item label="内容简介" name="introduction">
+                  <a-textarea
+                    v-model:value="pictureForm.introduction"
+                    placeholder="描述这张图片的背后故事..."
+                    :auto-size="{ minRows: 3, maxRows: 5 }"
+                    class="modern-input"
+                  />
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :md="12">
+                <a-form-item label="所属分类" name="category">
+                  <a-auto-complete
+                    v-model:value="pictureForm.category"
+                    placeholder="选择或输入分类"
+                    :options="categoryOptions"
+                    class="modern-input"
+                  />
+                </a-form-item>
+              </a-col>
+              <a-col :xs="24" :md="12">
+                <a-form-item label="关键词标签" name="tags">
+                  <a-select
+                    v-model:value="pictureForm.tags"
+                    mode="tags"
+                    placeholder="输入标签按回车确认"
+                    :options="tagOptions"
+                    class="modern-input"
+                  />
+                </a-form-item>
+              </a-col>
+            </a-row>
+
+            <div class="form-footer">
+              <a-button type="primary" html-type="submit" class="submit-btn" size="large" block>
+                {{ route.query?.id ? '保存并同步修改' : '立即发布到云端' }}
+              </a-button>
+            </div>
+          </a-form>
+        </section>
+      </transition>
+    </div>
+
+    <ImageOutPainting
+      ref="imageOutPaintingRef"
+      :picture="picture"
+      :spaceId="spaceId"
+      :onSuccess="onImageOutPaintingSuccess"
+    />
     <ImageCropper
       ref="imageCropperRef"
       :imageUrl="picture?.url"
@@ -40,40 +111,14 @@
       :space="space"
       :onSuccess="onCropSuccess"
     />
-    <!--  编辑图片信息表单  -->
-    <a-form v-if="picture" layout="vertical" :model="pictureForm" name="basic" @finish="handleSubmit">
-      <a-form-item label="名称" name="name">
-        <a-input v-model:value="pictureForm.name" placeholder="请输入名称" allowClear/>
-      </a-form-item>
-      <a-form-item label="简介" name="introduction">
-        <a-textarea
-          v-model:value="pictureForm.introduction"
-          placeholder="请输入简介"
-          :auto-size="{ minRows: 2, maxRows: 5 }"
-          allow-clear
-        />
-      </a-form-item>
-      <a-form-item label="分类" name="category">
-        <a-auto-complete
-          v-model:value="pictureForm.category" placeholder="请输入分类" :options="categoryOptions" allowClear/>
-      </a-form-item>
-      <a-form-item label="标签" name="tags">
-        <a-select
-          v-model:value="pictureForm.tags"
-          mode="tags"
-          placeholder="请输入标签"
-          :options="tagOptions"
-          allowClear
-        ></a-select>
-      </a-form-item>
-      <a-form-item>
-        <a-button type="primary" html-type="submit" style="width: 100%">创建</a-button>
-      </a-form-item>
-    </a-form>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  EditOutlined, FullscreenOutlined, PlusCircleOutlined,
+  RocketOutlined, FileImageOutlined, LinkOutlined
+} from '@ant-design/icons-vue'
 import PictureUpload from '@/components/PictureUpload.vue'
 import { computed, h, onMounted, reactive, ref, watchEffect } from 'vue'
 import {
@@ -84,157 +129,124 @@ import {
 import { message } from 'ant-design-vue'
 import { useRoute, useRouter } from 'vue-router'
 import UrlPictureUpload from '@/components/UrlPictureUpload.vue'
-import { EditOutlined, FullscreenOutlined } from '@ant-design/icons-vue'
 import ImageCropper from '@/components/ImageCropper.vue'
 import ImageOutPainting from '@/components/ImageOutPainting.vue'
 import { getSpaceVoByIdUsingGet } from '@/api/spaceController.ts'
 
 const uploadType = ref<'file' | 'url'>('file')
-// 空间 id
-const spaceId = computed(() => {
-  return route.query?.spaceId
-})
+const route = useRoute()
+const router = useRouter()
 
+// 保持你最放心的 spaceId 获取逻辑
+const spaceId = computed(() => route.query?.spaceId)
 const picture = ref<API.PictureVO>()
+const pictureForm = reactive<API.EditPictureRequest>({})
+const space = ref<API.SpaceVO>()
+
+// --- 以下所有逻辑函数名称、参数与你提供的老版本完全对齐 ---
 const onSuccess = (newPicture: API.PictureVO) => {
   picture.value = newPicture
   pictureForm.name = newPicture.name
 }
-const pictureForm = reactive<API.EditPictureRequest>({})
 
-const router = useRouter()
-/**
- * 提交表单
- * @param values
- */
 const handleSubmit = async (values: any) => {
   const pictureId = picture.value?.id
-  if (!pictureId) {
-    return
-  }
-  const res = await editPictureUsingPost({
-    id: pictureId,
-    spaceId: spaceId.value,
-    ...values,
-  })
-  if (res.data.code === 0 && res.data.data) {
-    message.success('创建成功')
-    //跳到详情页
-    router.push({
-      path: `/picture/${pictureId}`,
-    })
+  if (!pictureId) return
+  const res = await editPictureUsingPost({ id: pictureId, spaceId: spaceId.value, ...values })
+  if (res.data.code === 0) {
+    message.success('保存成功')
+    router.push({ path: `/picture/${pictureId}` })
   } else {
-    message.error('创建失败' + res.data.message)
+    message.error('保存失败，' + res.data.message)
   }
 }
 
-const categoryOptions = ref<string[]>([])
-const tagOptions = ref<string[]>([])
-//从后端获取标签和分类选项
+const categoryOptions = ref<any[]>([])
+const tagOptions = ref<any[]>([])
 const getCategoryTagOptions = async () => {
   const res = await listPictureTagCategoryUsingGet()
   if (res.data.code === 0 && res.data.data) {
-    categoryOptions.value = (res.data.data.categoryList ?? []).map((data: string) => {
-      return{
-        value: data,
-        label: data,
-      }
-    })
-    tagOptions.value = (res.data.data.tagList ?? []).map((data: string) => {
-      return{
-        value: data,
-        label: data,
-      }
-    })
-  } else {
-    message.error('加载标签和分类选项失败' + res.data.message)
+    categoryOptions.value = (res.data.data.categoryList ?? []).map(item => ({ value: item, label: item }))
+    tagOptions.value = (res.data.data.tagList ?? []).map(item => ({ value: item, label: item }))
   }
 }
 
-onMounted(() => {
-  getCategoryTagOptions()
-})
-
-const route = useRoute()
-//根据id获取原图片的数据
 const getOldPicture = async () => {
   const id = route.query?.id
   if (id) {
-    const res = await getPictureVoByIdUsingGet({
-      id: id
-    })
+    const res = await getPictureVoByIdUsingGet({ id })
     if (res.data.code === 0 && res.data.data) {
       const data = res.data.data
       picture.value = data
-      pictureForm.name = data.name
-      pictureForm.introduction = data.introduction
-      pictureForm.category = data.category
-      pictureForm.tags = data.tags
+      Object.assign(pictureForm, {
+        name: data.name,
+        introduction: data.introduction,
+        category: data.category,
+        tags: data.tags
+      })
     }
   }
 }
-onMounted(() => {
-  getOldPicture()
-})
 
-// 图片编辑弹窗引用
 const imageCropperRef = ref()
+const doEditPicture = () => imageCropperRef.value?.openModal()
+const onCropSuccess = (newPicture: API.PictureVO) => picture.value = newPicture
 
-// 编辑图片
-const doEditPicture = () => {
-  if (imageCropperRef.value) {
-    imageCropperRef.value.openModal()
-  }
-}
-
-// 编辑成功事件
-const onCropSuccess = (newPicture: API.PictureVO) => {
-  picture.value = newPicture
-}
-
-// AI 扩图弹窗引用
 const imageOutPaintingRef = ref()
+const doImagePainting = () => imageOutPaintingRef.value?.openModal()
+const onImageOutPaintingSuccess = (newPicture: API.PictureVO) => picture.value = newPicture
 
-// AI 扩图
-const doImagePainting = () => {
-  if (imageOutPaintingRef.value) {
-    imageOutPaintingRef.value.openModal()
-  }
-}
-
-// 编辑成功事件
-const onImageOutPaintingSuccess = (newPicture: API.PictureVO) => {
-  picture.value = newPicture
-}
-
-const space = ref<API.SpaceVO>()
-
-// 获取空间信息
 const fetchSpace = async () => {
-  // 获取数据
   if (spaceId.value) {
-    const res = await getSpaceVoByIdUsingGet({
-      id: spaceId.value,
-    })
-    if (res.data.code === 0 && res.data.data) {
-      space.value = res.data.data
-    }
+    const res = await getSpaceVoByIdUsingGet({ id: spaceId.value })
+    if (res.data.code === 0) space.value = res.data.data
   }
 }
 
-watchEffect(() => {
-  fetchSpace()
-})
+onMounted(() => { getCategoryTagOptions(); getOldPicture(); })
+watchEffect(fetchSpace)
 </script>
 
 <style scoped>
 #addPicturePage {
-  max-width: 720px;
+  max-width: 900px;
   margin: 0 auto;
+  padding: 32px 16px 80px;
 }
 
-#addPicturePage .edit-bar {
-  text-align: center;
-  margin: 16px 0;
+.page-header { margin-bottom: 32px; }
+.page-title { font-size: 26px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.title-icon { color: #3b82f6; }
+.space-badge { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 4px 12px; border-radius: 8px; color: #64748b; font-size: 13px; }
+
+.studio-container { display: flex; flex-direction: column; gap: 24px; }
+.studio-section { background: #fff; border-radius: 20px; padding: 32px; border: 1px solid #f0f0f0; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); position: relative; }
+
+.section-label {
+  position: absolute; top: -12px; left: 24px; background: #3b82f6; color: #fff; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 1px;
 }
+
+/* 现代选项卡样式 */
+.modern-tabs :deep(.ant-tabs-nav) { margin-bottom: 24px !important; }
+.modern-tabs :deep(.ant-tabs-tab) { font-weight: 600; font-size: 15px; }
+
+/* 悬浮编辑工具栏 */
+.smart-edit-bar { margin-top: 24px; display: flex; justify-content: center; }
+.bar-content {
+  display: flex; align-items: center; background: #1e293b; padding: 8px 16px; border-radius: 50px; gap: 8px; box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+.tool-btn { color: #cbd5e1 !important; background: transparent !important; border: none !important; font-weight: 600; }
+.tool-btn:hover { color: #fff !important; }
+.tool-btn.ai-btn { color: #60a5fa !important; }
+.divider { width: 1px; height: 20px; background: rgba(255, 255, 255, 0.1); }
+
+/* 表单细节 */
+.modern-input { border-radius: 10px !important; }
+.submit-btn {
+  height: 52px; border-radius: 12px; font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; margin-top: 24px;
+}
+
+/* 进场动画 */
+.fade-slide-enter-active, .fade-slide-leave-active { transition: all 0.4s ease-out; }
+.fade-slide-enter-from { opacity: 0; transform: translateY(15px); }
 </style>

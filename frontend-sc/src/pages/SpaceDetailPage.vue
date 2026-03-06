@@ -10,7 +10,7 @@
           :href="`/add_picture?spaceId=${id}`"
           target="_blank"
         >
-          + 上传图片到我的空间
+          + 上传图片到空间
         </a-button>
         <a-button
           v-if="canManageSpaceUser"
