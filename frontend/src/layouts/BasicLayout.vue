@@ -6,15 +6,17 @@
       </a-layout-header>
 
       <a-layout>
-        <GlobalSider v-if="!isAuthPage" class="sider" />
+        <div v-if="!isAuthPage" class="sider-placeholder">
+          <GlobalSider class="fixed-sider" />
+        </div>
 
-        <a-layout-content class="content">
+        <a-layout-content :class="['content', isAuthPage ? 'auth-content' : '']">
           <router-view />
         </a-layout-content>
       </a-layout>
 
       <a-layout-footer v-if="!isAuthPage" class="footer">
-        智能协同云图库 · 视觉资产管理系统
+        智能协同云图库 · CloudPic ©2026
       </a-layout-footer>
     </a-layout>
   </div>
@@ -27,48 +29,61 @@ import GlobalHeader from '@/components/GlobalHeader.vue'
 import GlobalSider from '@/components/GlobalSider.vue'
 
 const route = useRoute()
-
-// 判断当前是否为登录或注册页面
-const isAuthPage = computed(() => {
-  return ['/user/login', '/user/register'].includes(route.path)
-})
+const isAuthPage = computed(() => ['/user/login', '/user/register'].includes(route.path))
 </script>
 
 <style scoped>
+/* 顶部导航固定 */
 #basicLayout .header {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px); /* 导航栏也加点毛玻璃，跟登录卡片呼应 */
+  position: fixed;
+  top: 0;
+  z-index: 1001;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
   padding-inline: 24px;
   height: 64px;
-  line-height: 64px;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-#basicLayout .content {
-  background: #f8fafc; /* 更现代的淡蓝灰底色 */
-  padding: 24px;
-  /* 确保内容区域能撑满剩余高度 */
-  min-height: calc(100vh - 64px - 70px);
+/* 侧边栏固定逻辑 */
+.sider-placeholder {
+  width: 220px; /* 必须和侧边栏宽度一致 */
+  flex: 0 0 220px;
 }
 
-#basicLayout .sider {
+.fixed-sider {
+  position: fixed;
+  top: 64px; /* 避开 Header */
+  left: 0;
+  width: 220px;
+  height: calc(100vh - 64px);
+  z-index: 100;
   background: #fff;
-  border-right: 1px solid #f0f0f0;
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* 内容区背景优化 */
+#basicLayout .content {
+  margin-top: 64px; /* 避开固定 Header */
+  padding: 28px;
+  background: #f8fafc; /* 高级白，让图片卡片更立体 */
+  min-height: calc(100vh - 64px);
+}
+
+/* 登录注册页不需要边距 */
+.auth-content {
+  margin-top: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
 }
 
 #basicLayout .footer {
-  background: #fff;
-  padding: 16px;
+  background: #f8fafc;
+  padding: 20px;
   text-align: center;
   color: #94a3b8;
-  border-top: 1px solid #f0f0f0;
-}
-
-/* 针对登录注册页的特殊处理：去除所有边距，让背景铺满 */
-:deep(.content) {
-  padding: v-bind("isAuthPage ? '0' : '24px'") !important;
+  /* 只有在非登录页才增加左边距，避开固定侧边栏 */
+  margin-left: v-bind("isAuthPage ? '0' : '220px'");
 }
 </style>
