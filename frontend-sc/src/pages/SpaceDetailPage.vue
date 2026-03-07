@@ -1,65 +1,118 @@
 <template>
   <div id="spaceDetailPage">
-    <!-- 空间信息 -->
-    <a-flex justify="space-between">
-      <h2>{{ space.spaceName }}（{{ SPACE_TYPE_MAP[space.spaceType] }}）</h2>
-      <a-space size="middle">
-        <a-button
-          v-if="canUploadPicture"
-          type="primary"
-          :href="`/add_picture?spaceId=${id}`"
-          target="_blank"
-        >
-          + 上传图片到空间
-        </a-button>
-        <a-button
-          v-if="canManageSpaceUser"
-          type="primary"
-          ghost
-          :icon="h(TeamOutlined)"
-          :href="`/spaceUserManage/${id}`"
-          target="_blank"
-        >
-          管理团队空间成员
-        </a-button>
-        <a-button
-          v-if="canAnalyzeSpace"
-          type="primary"
-          ghost
-          :icon="h(BarChartOutlined)"
-          :href="`/space_analyze?spaceId=${id}`"
-          target="_blank"
-        >
-          分析我的空间
-        </a-button>
-        <a-button v-if="canEditPicture" :icon="h(EditOutlined)" @click="openBatchEditModal"> 批量编辑图片 </a-button>
-        <a-tooltip
-          :title="`占用空间 ${formatSize(space.totalSize)} / ${formatSize(space.maxSize)}`"
-        >
-          <a-progress
-            type="circle"
-            :percent="((space.totalSize * 100) / space.maxSize).toFixed(1)"
-            :size="42"
-          />
-        </a-tooltip>
-      </a-space>
-    </a-flex>
-    <PictureSearchForm :onSearch="handleSearch" />
-    <!-- 按颜色搜索 -->
-    <a-form-item label="按颜色搜索" style="margin-top: 16px">
-      <color-picker format="hex" @pureColorChange="handleColorSearch" />
-    </a-form-item>
-    <!-- 图片列表 -->
-    <PictureList :canEdit="canEditPicture" :canDelete="canDeletePicture"
-      :dataList="pictureList" :loading="loading" showOp :onReload="fetchPictureVoList" />
-    <a-pagination
-      style="text-align: right"
-      v-model:current="searchParams.current"
-      v-model:pageSize="searchParams.pageSize"
-      :total="total"
-      :show-total="() => `图片总数 ${total} / ${space.maxCount}`"
-      @change="onPageChange"
-    />
+    <a-card class="dashboard-banner" :bordered="false">
+      <div class="banner-content">
+        <div class="space-info-section">
+          <a-tooltip :title="`已用 ${formatSize(space.totalSize)} / 总计 ${formatSize(space.maxSize)}`">
+            <a-progress
+              type="circle"
+              :percent="usagePercent"
+              :size="72"
+              :stroke-width="8"
+              :stroke-color="getStorageColor(usagePercent)"
+              :format="(percent) => percent >= 100 ? '已满' : `${percent}%`"
+              class="usage-circle"
+            />
+          </a-tooltip>
+          <div class="space-text-info">
+            <h2 class="space-title">
+              {{ space.spaceName }}
+              <a-tag :color="space.spaceType === SPACE_TYPE_ENUM.TEAM ? 'cyan' : 'blue'" class="type-tag">
+                {{ SPACE_TYPE_MAP[space.spaceType] }}
+              </a-tag>
+            </h2>
+            <p class="space-stats">
+              当前包含 <strong class="highlight">{{ total }}</strong> 张图片，上限 {{ space.maxCount }} 张
+            </p>
+          </div>
+        </div>
+
+        <div class="action-section">
+          <a-space size="middle" wrap>
+            <a-button
+              v-if="canAnalyzeSpace"
+              type="primary"
+              ghost
+              class="modern-btn"
+              :href="`/space_analyze?spaceId=${id}`"
+              target="_blank"
+            >
+              <template #icon><BarChartOutlined /></template> 空间分析
+            </a-button>
+            <a-button
+              v-if="canManageSpaceUser"
+              type="primary"
+              ghost
+              class="modern-btn"
+              :href="`/spaceUserManage/${id}`"
+              target="_blank"
+            >
+              <template #icon><TeamOutlined /></template> 成员管理
+            </a-button>
+            <a-button v-if="canEditPicture" class="modern-btn" @click="openBatchEditModal">
+              <template #icon><EditOutlined /></template> 批量编辑
+            </a-button>
+            <a-button
+              v-if="canUploadPicture"
+              type="primary"
+              class="modern-btn upload-btn"
+              :href="`/add_picture?spaceId=${id}`"
+              target="_blank"
+            >
+              <template #icon><CloudUploadOutlined /></template> 上传图片
+            </a-button>
+          </a-space>
+        </div>
+      </div>
+    </a-card>
+
+    <div style="margin-bottom: 24px" />
+
+    <a-card class="filter-card" :bordered="false">
+      <template #title>
+        <span class="card-title"><SearchOutlined /> 智能检索与筛选</span>
+      </template>
+
+      <PictureSearchForm :onSearch="handleSearch" />
+
+      <a-divider style="margin: 16px 0;" />
+
+      <div class="color-search-area">
+        <span class="color-search-label"><BgColorsOutlined /> 按主色调搜索：</span>
+        <color-picker
+          format="hex"
+          @pureColorChange="handleColorSearch"
+          shape="square"
+          class="custom-color-picker"
+        />
+        <span class="color-search-tip">（选取颜色后，按照颜色相近的图片排序）</span>
+      </div>
+    </a-card>
+
+    <div style="margin-bottom: 24px" />
+
+    <a-card class="content-card" :bordered="false">
+      <PictureList
+        :canEdit="canEditPicture"
+        :canDelete="canDeletePicture"
+        :dataList="pictureList"
+        :loading="loading"
+        showOp
+        :onReload="fetchPictureVoList"
+      />
+
+      <div class="pagination-wrapper">
+        <a-pagination
+          v-model:current="searchParams.current"
+          v-model:pageSize="searchParams.pageSize"
+          :total="total"
+          :show-total="() => `图库总数 ${total} / ${space.maxCount}`"
+          @change="onPageChange"
+          show-size-changer
+        />
+      </div>
+    </a-card>
+
     <BatchEditPictureModal
       ref="batchEditPictureModalRef"
       :spaceId="id"
@@ -70,7 +123,6 @@
 </template>
 
 <script setup lang="ts">
-//数据
 import { computed, h, onMounted, ref, watch } from 'vue'
 import {
   listPictureVoByPageUsingPost,
@@ -83,45 +135,49 @@ import PictureList from '@/components/PictureList.vue'
 import PictureSearchForm from '@/components/PictureSearchForm.vue'
 import { ColorPicker } from 'vue3-colorpicker'
 import 'vue3-colorpicker/style.css'
-import { EditOutlined, BarChartOutlined, TeamOutlined } from '@ant-design/icons-vue'
+import {
+  EditOutlined, BarChartOutlined, TeamOutlined,
+  CloudUploadOutlined, SearchOutlined, BgColorsOutlined
+} from '@ant-design/icons-vue'
 import BatchEditPictureModal from '@/components/BatchEditPictureModal.vue'
-import {SPACE_PERMISSION_ENUM, SPACE_TYPE_ENUM, SPACE_TYPE_MAP} from '../constants/space.ts'
+import { SPACE_PERMISSION_ENUM, SPACE_TYPE_ENUM, SPACE_TYPE_MAP } from '../constants/space.ts'
 
-const props = defineProps<{
-  id: string | number
-}>()
+const props = defineProps<{ id: string | number }>()
 const space = ref<API.SpaceVO>({})
 
-// 通用权限检查函数
-function createPermissionChecker(permission: string) {
-  return computed(() => {
-    return (space.value.permissionList ?? []).includes(permission)
-  })
+// 计算容量百分比
+const usagePercent = computed(() => {
+  if (!space.value.maxSize || space.value.maxSize === 0) return 0
+  const percent = (space.value.totalSize * 100) / space.value.maxSize
+  return Number(percent.toFixed(1))
+})
+
+// 根据容量百分比动态变色（红黄绿）
+const getStorageColor = (percent: number) => {
+  if (percent >= 90) return '#ff4d4f' // 爆仓红
+  if (percent >= 70) return '#faad14' // 预警黄
+  return '#10b981' // 健康绿
 }
 
-// 定义权限检查
-// const canManageSpaceUser = createPermissionChecker(SPACE_PERMISSION_ENUM.SPACE_USER_MANAGE)
-// 修改团队成员管理的权限检查逻辑
+function createPermissionChecker(permission: string) {
+  return computed(() => (space.value.permissionList ?? []).includes(permission))
+}
+
 const canManageSpaceUser = computed(() => {
-  // 条件：是团队空间 && 拥有管理权限
   const isTeamSpace = space.value.spaceType === SPACE_TYPE_ENUM.TEAM
   const hasPermission = (space.value.permissionList ?? []).includes(SPACE_PERMISSION_ENUM.SPACE_USER_MANAGE)
   return isTeamSpace && hasPermission
 })
 const canAnalyzeSpace = computed(() => {
-  // 只要有管理权限就能分析（个人空间的主人也有这个权限）
   return (space.value.permissionList ?? []).includes(SPACE_PERMISSION_ENUM.SPACE_USER_MANAGE)
 })
 const canUploadPicture = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_UPLOAD)
 const canEditPicture = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_EDIT)
 const canDeletePicture = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_DELETE)
 
-// 获取空间详情
 const fetchSpaceDetail = async () => {
   try {
-    const res = await getSpaceVoByIdUsingGet({
-      id: props.id,
-    })
+    const res = await getSpaceVoByIdUsingGet({ id: props.id })
     if (res.data.code === 0 && res.data.data) {
       space.value = res.data.data
     } else {
@@ -132,16 +188,10 @@ const fetchSpaceDetail = async () => {
   }
 }
 
-onMounted(() => {
-  fetchSpaceDetail()
-})
-
-// 数据
 const pictureList = ref([])
 const total = ref(0)
 const loading = ref(true)
 
-// 搜索条件
 const searchParams = ref<API.QueryPictureRequest>({
   current: 1,
   pageSize: 12,
@@ -149,21 +199,15 @@ const searchParams = ref<API.QueryPictureRequest>({
   sortOrder: 'descend',
 })
 
-// 分页参数
-const onPageChange = (page, pageSize) => {
+const onPageChange = (page: number, pageSize: number) => {
   searchParams.value.current = page
   searchParams.value.pageSize = pageSize
   fetchPictureVoList()
 }
 
-// 获取数据
 const fetchPictureVoList = async () => {
   loading.value = true
-  // 转换搜索参数
-  const params = {
-    spaceId: props.id,
-    ...searchParams.value,
-  }
+  const params = { spaceId: props.id, ...searchParams.value }
   const res = await listPictureVoByPageUsingPost(params)
   if (res.data.data) {
     pictureList.value = res.data.data.records ?? []
@@ -174,62 +218,172 @@ const fetchPictureVoList = async () => {
   loading.value = false
 }
 
-// 搜索
 const handleSearch = (newSearchParams: API.QueryPictureRequest) => {
-  console.log('new', newSearchParams)
-  searchParams.value = {
-    ...searchParams.value,
-    ...newSearchParams,
-    current: 1,
-  }
+  searchParams.value = { ...searchParams.value, ...newSearchParams, current: 1 }
   fetchPictureVoList()
 }
 
-// 页面加载时请求一次
 onMounted(() => {
+  fetchSpaceDetail()
   fetchPictureVoList()
 })
 
 const handleColorSearch = async (color: string) => {
   loading.value = true
-  const res = await searchPictureByColorUsingPost({
-    picColor: color,
-    spaceId: props.id,
-  })
+  const res = await searchPictureByColorUsingPost({ picColor: color, spaceId: props.id })
   if (res.data.code === 0 && res.data.data) {
     const data = res.data.data ?? []
     pictureList.value = data
     total.value = data.length
-    loading.value = false
   } else {
-    loading.value = false;
     message.error('获取数据失败，' + res.data.message)
   }
+  loading.value = false
 }
 
-// 批量编辑弹窗引用
 const batchEditPictureModalRef = ref()
+const handleBatchEditPictureSuccess = () => fetchPictureVoList()
+const openBatchEditModal = () => batchEditPictureModalRef.value?.openModal()
 
-// 批量编辑成功后，刷新数据，以 handle 或 on 开头的函数名，通常用于处理事件或回调（比如 handleSubmit, handleClick, onChange）
-const handleBatchEditPictureSuccess = () => {
+watch(() => props.id, () => {
+  fetchSpaceDetail()
   fetchPictureVoList()
-}
-
-// 打开批量编辑弹窗
-const openBatchEditModal = () => {
-  if (batchEditPictureModalRef.value) {
-    batchEditPictureModalRef.value.openModal()
-  }
-}
-
-//空间 id 改变时，必须重新获取数据
-watch(
-  () => props.id,
-  (newSpaceId) => {
-    fetchSpaceDetail()
-    fetchPictureVoList()
-  },
-)
+})
 </script>
 
-<style scoped></style>
+<style scoped>
+#spaceDetailPage {
+  padding: 0 4px;
+}
+
+/* 顶部 Dashboard Banner */
+.dashboard-banner {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+}
+
+.banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.space-info-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.usage-circle {
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.space-text-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.space-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.type-tag {
+  font-size: 14px;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  transform: translateY(-2px);
+}
+
+.space-stats {
+  color: #64748b;
+  margin: 0;
+  font-size: 14px;
+}
+
+.highlight {
+  color: #3b82f6;
+  font-size: 16px;
+  font-family: monospace;
+}
+
+/* 按钮样式 */
+.modern-btn {
+  border-radius: 8px;
+  font-weight: 600;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.upload-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.upload-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+}
+
+/* 检索与列表卡片 */
+.filter-card, .content-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* 颜色搜索区整合 */
+.color-search-area {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.color-search-label {
+  font-weight: 600;
+  color: #475569;
+  margin-right: 12px;
+}
+
+.color-search-tip {
+  color: #94a3b8;
+  font-size: 13px;
+  margin-left: 12px;
+}
+
+.custom-color-picker {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 分页居中优化 */
+.pagination-wrapper {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px dashed #e2e8f0;
+}
+</style>
