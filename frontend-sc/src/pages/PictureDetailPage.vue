@@ -1,10 +1,7 @@
 <template>
   <div id="pictureDetailPage">
     <template v-if="picture.id">
-      <div
-        class="immersive-bg"
-        :style="{ backgroundImage: `url(${picture.url})` }"
-      ></div>
+      <div class="immersive-bg" :style="{ backgroundImage: `url(${picture.url})` }"></div>
 
       <div class="content-wrapper">
         <div class="floating-back" @click="router.back()">
@@ -14,16 +11,8 @@
         <a-row :gutter="[24, 24]">
           <a-col :xs="24" :lg="16" :xl="17">
             <div class="glass-card preview-container">
-              <a-image
-                :src="picture.url"
-                class="main-image"
-                :preview="true"
-              />
-              <div
-                v-if="picture.picColor"
-                class="image-glow"
-                :style="{ backgroundColor: toHexColor(picture.picColor) }"
-              ></div>
+              <a-image :src="picture.url" class="main-image" :preview="true" />
+              <div v-if="picture.picColor" class="image-glow" :style="{ backgroundColor: toHexColor(picture.picColor) }"></div>
             </div>
           </a-col>
 
@@ -63,10 +52,7 @@
                   <span class="label">主色调</span>
                   <a-space>
                     <span class="value">{{ picture.picColor }}</span>
-                    <div
-                      class="color-dot"
-                      :style="{ backgroundColor: toHexColor(picture.picColor) }"
-                    ></div>
+                    <div class="color-dot" :style="{ backgroundColor: toHexColor(picture.picColor) }"></div>
                   </a-space>
                 </div>
               </div>
@@ -78,8 +64,7 @@
 
               <div class="action-footer">
                 <a-button type="primary" block size="large" class="download-btn" @click="doDownload">
-                  <template #icon><DownloadOutlined /></template>
-                  高清下载
+                  <template #icon><DownloadOutlined /></template> 高清下载
                 </a-button>
 
                 <div class="secondary-actions">
@@ -100,8 +85,27 @@
       </div>
     </template>
 
+    <div v-else-if="errorMessage" class="error-box glass-card">
+      <a-result
+        status="403"
+        title="需要解锁查看权限"
+        :sub-title="errorMessage"
+      >
+        <template #extra>
+          <a-space size="large">
+            <a-button size="large" @click="router.back()">
+              <LeftOutlined /> 返回画廊
+            </a-button>
+            <a-button type="primary" size="large" @click="router.push('/user/login')">
+              立即登录体验
+            </a-button>
+          </a-space>
+        </template>
+      </a-result>
+    </div>
+
     <div v-else class="loading-box">
-      <a-spin size="large" tip="正在载入艺术画廊..." />
+      <a-spin size="large" tip="正在探索视觉空间..." />
     </div>
 
     <ShareModel ref="shareModalRef" :link="shareLink" title="分享图片" />
@@ -114,7 +118,7 @@ import { deletePictureUsingPost, getPictureVoByIdUsingGet } from '@/api/pictureC
 import { message } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
 import { downloadImage, formatSize, toHexColor } from '../utils'
-import { DeleteOutlined, EditOutlined, DownloadOutlined, ShareAltOutlined, LeftOutlined} from '@ant-design/icons-vue';
+import { DeleteOutlined, EditOutlined, DownloadOutlined, ShareAltOutlined, LeftOutlined } from '@ant-design/icons-vue'
 import ShareModel from '@/components/ShareModal.vue'
 import { SPACE_PERMISSION_ENUM } from '@/constants/space.ts'
 
@@ -125,19 +129,23 @@ interface Props {
 const props = defineProps<Props>()
 const picture = ref<API.PictureVO>({})
 
+// 🚀 新增：保存报错信息，用来触发 403 页面
+const errorMessage = ref<string>('')
+const router = useRouter()
+
 // 获取图片详情
 const fetchPictureDetail = async () => {
   try {
-    const res = await getPictureVoByIdUsingGet({
-      id: props.id,
-    })
+    const res = await getPictureVoByIdUsingGet({ id: props.id })
     if (res.data.code === 0 && res.data.data) {
       picture.value = res.data.data
     } else {
-      message.error('获取图片详情失败：' + res.data.message)
+      // 🚀 如果没拿到数据，把报错信息存起来，页面会自动切到 403 状态
+      errorMessage.value = res.data.message || '这件艺术品被锁在保险箱里，登录后即可解锁高清大图~'
     }
   } catch (e: any) {
-    message.error('获取图片详情失败：' + e.message)
+    // 🚀 捕获网络异常等情况
+    errorMessage.value = e.message || '获取详情失败，请先登录系统'
   }
 }
 
@@ -151,7 +159,6 @@ const canDelete = computed(() => {
   return (picture.value.permissionList ?? []).includes(SPACE_PERMISSION_ENUM.PICTURE_DELETE)
 })
 
-const router = useRouter()
 const doEdit = () => {
   router.push({
     path: '/add_picture',
@@ -184,6 +191,7 @@ const doShare = () => {
 </script>
 
 <style scoped>
+/* 原有的完美样式完全保留 */
 #pictureDetailPage {
   position: relative;
   min-height: calc(100vh - 150px);
@@ -227,6 +235,20 @@ const doShare = () => {
   overflow: hidden;
 }
 
+/* 🚀 新增：拦截页特有样式，让它也在中间显示成一个玻璃卡片 */
+.error-box {
+  position: relative;
+  z-index: 10;
+  height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 40px auto;
+  max-width: 600px;
+  text-align: center;
+}
+
+/* 以下是原有样式 */
 .preview-container {
   display: flex;
   justify-content: center;

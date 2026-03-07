@@ -87,10 +87,18 @@ const originItems = [
 // 过滤菜单项
 const filterOriginItems = (originItems = [] as MenuProps['items']) => {
   return originItems?.filter((originItem) => {
-    if (originItem?.key.startsWith('/admin')){
-      const loginUser = loginUserStore.loginUser
+    const loginUser = loginUserStore.loginUser
+
+    // 1. 如果是管理员路径，非管理员直接 Pass
+    if (originItem?.key.startsWith('/admin')) {
       if (!loginUser || loginUser.userRole !== 'admin') return false
     }
+
+    // 2. 新增逻辑：如果是“上传图片”，且用户未登录（没有 id），直接隐藏
+    if (originItem?.key === '/add_picture') {
+      if (!loginUser || !loginUser.id) return false
+    }
+
     return true
   })
 }

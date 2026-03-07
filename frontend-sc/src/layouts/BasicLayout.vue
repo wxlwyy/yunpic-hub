@@ -6,7 +6,7 @@
       </a-layout-header>
 
       <a-layout>
-        <div v-if="!isAuthPage" class="sider-placeholder">
+        <div v-if="showSider" class="sider-placeholder">
           <GlobalSider class="fixed-sider" />
         </div>
 
@@ -27,9 +27,18 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import GlobalHeader from '@/components/GlobalHeader.vue'
 import GlobalSider from '@/components/GlobalSider.vue'
+import { useLoginUserStore } from '@/stores/useLoginUserStore.ts' // 🚀 引入用户状态
 
 const route = useRoute()
+const loginUserStore = useLoginUserStore()
+
+// 是否是登录/注册页
 const isAuthPage = computed(() => ['/user/login', '/user/register'].includes(route.path))
+
+// 🚀 是否显示侧边栏：非认证页 且 用户已登录（有 id）
+const showSider = computed(() => {
+  return !isAuthPage.value && loginUserStore.loginUser && loginUserStore.loginUser.id
+})
 </script>
 
 <style scoped>
@@ -48,13 +57,13 @@ const isAuthPage = computed(() => ['/user/login', '/user/register'].includes(rou
 
 /* 侧边栏固定逻辑 */
 .sider-placeholder {
-  width: 220px; /* 必须和侧边栏宽度一致 */
+  width: 220px;
   flex: 0 0 220px;
 }
 
 .fixed-sider {
   position: fixed;
-  top: 64px; /* 避开 Header */
+  top: 64px;
   left: 0;
   width: 220px;
   height: calc(100vh - 64px);
@@ -65,9 +74,9 @@ const isAuthPage = computed(() => ['/user/login', '/user/register'].includes(rou
 
 /* 内容区背景优化 */
 #basicLayout .content {
-  margin-top: 64px; /* 避开固定 Header */
+  margin-top: 64px;
   padding: 28px;
-  background: #f8fafc; /* 高级白，让图片卡片更立体 */
+  background: #f8fafc;
   min-height: calc(100vh - 64px);
 }
 
@@ -83,7 +92,7 @@ const isAuthPage = computed(() => ['/user/login', '/user/register'].includes(rou
   padding: 20px;
   text-align: center;
   color: #94a3b8;
-  /* 只有在非登录页才增加左边距，避开固定侧边栏 */
-  margin-left: v-bind("isAuthPage ? '0' : '220px'");
+  /* 🚀 动态调整页脚的左边距：有侧边栏时才让出 220px，没有就 100% 居中 */
+  margin-left: v-bind("showSider ? '220px' : '0'");
 }
 </style>

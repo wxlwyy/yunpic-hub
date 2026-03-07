@@ -43,6 +43,14 @@
           <a-button type="primary" html-type="submit" class="login-button" size="large">
             进入空间
           </a-button>
+          <a-button
+            block
+            size="large"
+            class="guest-button"
+            @click="router.push('/')"
+          >
+            <compass-outlined /> 暂不登录，先去逛逛
+          </a-button>
         </a-form-item>
       </a-form>
     </div>
@@ -55,7 +63,7 @@ import { userLoginUsingPost } from '@/api/userController.ts'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
 import { message } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
-import { UserOutlined, LockOutlined } from '@ant-design/icons-vue'
+import { UserOutlined, LockOutlined, CompassOutlined } from '@ant-design/icons-vue' // 🚀 加了指南针图标
 
 const formState = reactive<API.UserLoginRequest>({
   userAccount: '',
@@ -199,5 +207,40 @@ const handleSubmit = async (values: any) => {
 .login-button:hover {
   background: #34495e;
   transform: translateY(-2px);
+}
+
+.login-button {
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: #2c3e50;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
+}
+
+.login-button:hover {
+  background: #34495e;
+  transform: translateY(-2px);
+}
+
+/* 🚀 新增：访客按钮样式 */
+.guest-button {
+  margin-top: 16px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+}
+
+.guest-button:hover {
+  color: #3b82f6;
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #3b82f6;
 }
 </style>
