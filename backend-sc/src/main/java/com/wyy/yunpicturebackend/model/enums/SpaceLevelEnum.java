@@ -7,9 +7,9 @@ import lombok.Getter;
 @Getter
 public enum SpaceLevelEnum {
 
-    COMMON("普通版",0, 10L, 5L * 1024 * 1024),
-    PROFESSIONAL("专业版",1, 20L, 10L * 1024 * 1024),
-    FLAGSHIP("旗舰版",2, 30L, 15L * 1024 * 1024);
+    COMMON("普通版",0, 10L, 10L * 1024 * 1024),
+    PROFESSIONAL("专业版",1, 20L, 20L * 1024 * 1024),
+    FLAGSHIP("旗舰版",2, 30L, 30L * 1024 * 1024);
 
 
     private final String text;

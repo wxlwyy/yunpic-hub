@@ -21,7 +21,7 @@ public class UploadFilePicture extends UploadPictureTemplate{
         //要<=2MB
         long size = multipartFile.getSize();
         final long ONE_MB = 1024 * 1024L;
-        ThrowUtils.throwIf(size > 2 * ONE_MB, ErrorCode.PARAMS_ERROR, "文件大小不能超过2MB");
+        ThrowUtils.throwIf(size > 5 * ONE_MB, ErrorCode.PARAMS_ERROR, "文件大小不能超过5MB");
         //后缀为"jpeg", "jpg", "png", "webp"
         String fileNameSuffix = FileUtil.getSuffix(multipartFile.getOriginalFilename());
         final List<String> ALLOW_FORMAT_LIST = Arrays.asList("jpg", "jpeg", "png", "webp");
