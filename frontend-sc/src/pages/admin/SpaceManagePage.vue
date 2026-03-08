@@ -3,15 +3,15 @@
     <a-flex justify="space-between" align="center" class="page-header">
       <h2 class="page-title"><CloudServerOutlined /> 空间资源管理</h2>
       <a-space size="middle">
-        <a-button type="primary" href="/add_space" target="_blank" class="action-btn create-btn">
+        <a-button type="primary" @click="router.push('/add_space')" class="action-btn create-btn">
           <template #icon><PlusOutlined /></template>
           开通新空间
         </a-button>
-        <a-button ghost type="primary" href="/space_analyze?queryPublic=1" target="_blank" class="action-btn">
+        <a-button ghost type="primary" @click="router.push('/space_analyze?queryPublic=1')" class="action-btn">
           <template #icon><PieChartOutlined /></template>
           公共图库分析
         </a-button>
-        <a-button ghost type="primary" href="/space_analyze?queryAll=1" target="_blank" class="action-btn">
+        <a-button ghost type="primary" @click="router.push('/space_analyze?queryAll=1')" class="action-btn">
           <template #icon><GlobalOutlined /></template>
           全站空间分析
         </a-button>
@@ -122,18 +122,14 @@
 
           <template v-else-if="column.key === 'action'">
             <a-space size="small">
-              <a-button type="primary" size="small" ghost :href="`/space_analyze?spaceId=${record.id}`" target="_blank">
+              <a-button type="primary" size="small" ghost @click="router.push({ path: '/space_analyze', query: { spaceId: record.id } })">
                 <template #icon><BarChartOutlined /></template> 分析
               </a-button>
-              <a-button size="small" :href="`/add_space?id=${record.id}`" target="_blank">
+              <a-button size="small" @click="router.push({ path: '/add_space', query: { id: record.id } })">
                 <template #icon><EditOutlined /></template> 编辑
               </a-button>
-              <a-popconfirm
-                title="确认销毁此空间？内部图片将一并删除！"
-                ok-text="确认销毁"
-                cancel-text="取消"
-                @confirm="doDelete(record.id)"
-              >
+
+              <a-popconfirm title="确认销毁此空间？内部图片将一并删除！" ok-text="确认销毁" cancel-text="取消" @confirm="doDelete(record.id)">
                 <a-button size="small" danger>删除</a-button>
               </a-popconfirm>
             </a-space>
@@ -155,6 +151,7 @@ import dayjs from 'dayjs'
 import { deleteSpaceUsingPost, listSpaceByPageUsingPost } from '@/api/spaceController.ts'
 import { SPACE_LEVEL_MAP, SPACE_LEVEL_OPTIONS, SPACE_TYPE_MAP, SPACE_TYPE_OPTIONS } from '../../constants/space.ts'
 import { formatSize } from '../../utils'
+import router from "@/router";
 
 const columns = [
   { title: '空间ID', dataIndex: 'id', width: 100, fixed: 'left' },

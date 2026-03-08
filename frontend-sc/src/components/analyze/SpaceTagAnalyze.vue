@@ -1,25 +1,26 @@
 <template>
   <div class="space-tag-analyze">
-    <a-card title="空间图片标签分析">
-      <v-chart :option="options" style="height: 320px; max-width: 100%;" :loading="loading" />
-    </a-card>
+    <a-skeleton :loading="loading" active :paragraph="{ rows: 5 }">
+      <div v-if="dataList.length === 0" class="empty-box">
+        <a-empty description="暂无标签数据" />
+      </div>
+      <v-chart v-else :option="options" style="height: 350px; max-width: 100%" />
+    </a-skeleton>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
-import { getSpaceTagAnalyzeUsingPost, getSpaceUsageAnalyzeUsingPost } from '@/api/spaceAnalyzeController.ts'
+import { getSpaceTagAnalyzeUsingPost } from '@/api/spaceAnalyzeController.ts'
 import { message } from 'ant-design-vue'
-import { formatSize } from '../../utils'
 import VChart from 'vue-echarts'
 import 'echarts'
 import 'echarts-wordcloud'
 
-
 interface Props {
   queryAll?: boolean
   queryPublic?: boolean
-  spaceId?: number
+  spaceId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,13 +28,15 @@ const props = withDefaults(defineProps<Props>(), {
   queryPublic: false,
 })
 
-// 图表数据
 const dataList = ref<API.SpaceTagAnalyzeResponse[]>([])
 const loading = ref(true)
 
-/**
- * 加载数据
- */
+// 🚀 大厂级调色盘：预设一组高级色，避免随机出“土色”
+const PRESET_COLORS = [
+  '#1890ff', '#36cfc9', '#52c41a', '#722ed1', '#faad14',
+  '#f5222d', '#13c2c2', '#eb2f96', '#2f54eb', '#a0d911'
+]
+
 const fetchData = async () => {
   loading.value = true
   const res = await getSpaceTagAnalyzeUsingPost({
@@ -44,14 +47,11 @@ const fetchData = async () => {
   if (res.data.code === 0) {
     dataList.value = res.data.data ?? []
   } else {
-    message.error('获取数据失败，' + res.data.message)
+    message.error('获取标签数据失败')
   }
   loading.value = false
 }
 
-/**
- * 监听变量，改变时触发数据的重新加载（根据watchEffect函数，只要fetchData函数里的变量发生变化，会自动执行fetchData函数）
- */
 watchEffect(() => {
   fetchData()
 })
@@ -64,21 +64,45 @@ const options = computed(() => {
 
   return {
     tooltip: {
-      trigger: 'item',
-      formatter: (params: any) => `${params.name}: ${params.value} 次`,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      borderRadius: 8,
+      padding: [8, 12],
+      textStyle: { color: '#595959' },
+      formatter: (params: any) => {
+        return `<div style="font-weight:bold;color:${params.color}">${params.name}</div>
+                <div style="margin-top:4px">出现频率：<span style="font-weight:bold">${params.value}</span> 次</div>`
+      },
+      extraCssText: 'box-shadow: 0 2px 8px rgba(0,0,0,0.1);'
     },
     series: [
       {
         type: 'wordCloud',
-        gridSize: 10,
-        sizeRange: [12, 50], // 字体大小范围
-        rotationRange: [-90, 90],
         shape: 'circle',
+        left: 'center',
+        top: 'center',
+        width: '90%',
+        height: '90%',
+        right: null,
+        bottom: null,
+        sizeRange: [14, 50], // 🚀 增大字体跨度，突出重点
+        rotationRange: [0, 0], // 🚀 建议设为 0，因为横向阅读最符合人类习惯
+        rotationStep: 45,
+        gridSize: 12,
+        drawOutOfBound: false,
+        layoutAnimation: true,
         textStyle: {
-          color: () =>
-            `rgb(${Math.round(Math.random() * 255)}, ${Math.round(
-              Math.random() * 255,
-            )}, ${Math.round(Math.random() * 255)})`, // 随机颜色
+          fontFamily: 'PingFang SC, Microsoft YaHei',
+          fontWeight: 600,
+          // 🚀 核心改动：从预设颜色库中随机挑选
+          color: () => PRESET_COLORS[Math.floor(Math.random() * PRESET_COLORS.length)]
+        },
+        // 🚀 悬停效果：加阴影和放大
+        emphasis: {
+          textStyle: {
+            shadowBlur: 10,
+            shadowColor: 'rgba(0, 0, 0, 0.15)',
+            fontSize: 55
+          }
         },
         data: tagData,
       },
@@ -87,4 +111,11 @@ const options = computed(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.empty-box {
+  height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>

@@ -3,11 +3,11 @@
     <a-flex justify="space-between" align="center" class="page-header">
       <h2 class="page-title"><PictureOutlined /> 图片资源管理</h2>
       <a-space size="middle">
-        <a-button type="primary" href="/add_picture" target="_blank" class="action-btn">
+        <a-button type="primary" @click="router.push('/add_picture')" class="action-btn">
           <template #icon><PlusOutlined /></template>
           上传新图片
         </a-button>
-        <a-button type="primary" href="/add_picture/batch" target="_blank" ghost class="action-btn">
+        <a-button type="primary" ghost @click="router.push('/add_picture/batch')" class="action-btn">
           <template #icon><CloudUploadOutlined /></template>
           批量导入
         </a-button>
@@ -144,7 +144,7 @@
               </a-space>
 
               <a-space size="small">
-                <a-button size="small" :href="`/add_picture?id=${record.id}`" target="_blank">
+                <a-button size="small" @click="router.push(`/add_picture?id=${record.id}`)">
                   编辑
                 </a-button>
                 <a-popconfirm
@@ -174,6 +174,7 @@ import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import { deletePictureUsingPost, listPictureByPageUsingPost, reviewPictureUsingPost } from '@/api/pictureController.ts'
 import { PIC_REVIEW_STATUS_ENUM, PIC_REVIEW_STATUS_MAP, PIC_REVIEW_STATUS_OPTIONS } from '../../constants/picture.ts'
+import router from "@/router";
 
 // 列定义保持不变，只调整了部分列宽保证横向排版
 const columns = [

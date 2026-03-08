@@ -141,7 +141,7 @@ const pagination = computed(() => ({
   pageSize: searchParams.pageSize ?? 10,
   total: total.value,
   showSizeChanger: true,
-  showTotal: (total: number) => `系统共计 ${total} 名常驻用户`,
+  showTotal: (total: number) => `系统共计 ${total} 名用户`,
 }))
 
 const doTableChange = (pag: any) => {
