@@ -3,7 +3,9 @@
     <div class="masonry-grid" v-if="dataList && dataList.length > 0">
       <div v-for="picture in dataList" :key="picture.id" class="masonry-item">
         <div class="picture-card" @click="doClickPicture(picture)">
-          <div class="image-wrapper">
+          <div
+            class="image-wrapper"
+            :style="{ backgroundColor: toHexColor(picture.picColor) + '22' }">
             <img
               class="main-image"
               :src="picture.url"
@@ -60,6 +62,7 @@ import { message } from 'ant-design-vue'
 import { DeleteOutlined, EditOutlined, SearchOutlined, ShareAltOutlined } from '@ant-design/icons-vue'
 import { ref } from 'vue'
 import ShareModel from '@/components/ShareModal.vue'
+import {toHexColor} from "@/utils";
 
 interface Props {
   dataList?: API.PictureVO[]

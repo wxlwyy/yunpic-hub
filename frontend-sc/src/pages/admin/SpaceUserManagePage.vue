@@ -1,172 +1,294 @@
 <template>
-  <div id="spaceManagePage">
-    <a-flex justify="space-between">
-      <h2>空间成员管理</h2>
+  <div id="spaceUserManagePage">
+    <div class="page-header">
+      <div class="title-section">
+        <team-outlined class="header-icon" />
+        <div class="text-group">
+          <h2>空间成员管理</h2>
+          <p class="subtitle">管理当前空间的协作权限与成员名单</p>
+        </div>
+      </div>
       <a-space>
-        <a-button type="primary" href="/add_space" target="_blank">+ 创建空间</a-button>
-        <a-button type="primary" ghost href="/space_analyze?queryPublic=1" target="_blank">
-          分析公共图库
-        </a-button>
-        <a-button type="primary" ghost href="/space_analyze?queryAll=1" target="_blank">
-          分析全空间
+        <a-button class="ghost-btn" @click="router.push(`/space/${props.spaceId}`)">
+          <template #icon><left-outlined /></template> 返回团队空间
         </a-button>
       </a-space>
-    </a-flex>
-    <div style="margin-bottom: 16px"></div>
-    <!--  添加成员  -->
-    <a-form layout="inline" :model="formData" @finish="handleSubmit">
-      <a-form-item label="用户 id" name="userId">
-        <a-input v-model:value="formData.userId" placeholder="请输入用户 id" allow-clear />
-      </a-form-item>
-      <a-form-item>
-        <a-button type="primary" html-type="submit">添加用户</a-button>
-      </a-form-item>
-    </a-form>
-    <div style="margin-bottom: 16px" />
-    <!--  表格  -->
-    <a-table :columns="columns" :data-source="dataList">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'userInfo'">
-          <a-space>
-            <a-avatar :src="record.userVO?.userAvatar" />
-            {{ record.userVO?.userName }}
-          </a-space>
-        </template>
-        <template v-if="column.dataIndex === 'spaceRole'">
-          <a-select
-            v-model:value="record.spaceRole"
-            :options="SPACE_ROLE_OPTIONS"
-            @change="(value) => editSpaceRole(value, record)"
-          />
-        </template>
-        <template v-else-if="column.dataIndex === 'createTime'">
-          {{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm:ss') }}
-        </template>
-        <template v-else-if="column.key === 'action'">
-          <a-space wrap>
-            <a-button type="link" danger @click="doDelete(record.id)">删除</a-button>
-          </a-space>
-        </template>
+    </div>
+
+    <a-card class="action-card" :bordered="false">
+      <template #title>
+        <span class="card-title"><user-add-outlined /> 邀请新成员</span>
       </template>
-    </a-table>
+      <a-form layout="vertical" :model="formData" @finish="handleSubmit">
+        <a-row :gutter="24" align="bottom">
+          <a-col :xs="24" :md="16" :lg="10">
+            <a-form-item label="用户 ID" name="userId" extra="请向成员索取其账号唯一标识 ID">
+              <a-input
+                v-model:value="formData.userId"
+                placeholder="请输入 19 位用户 ID"
+                style="width: 100%"
+                size="large"
+                allow-clear
+              >
+                <template #prefix><idcard-outlined style="color: rgba(0,0,0,0.25)" /></template>
+              </a-input>
+            </a-form-item>
+          </a-col>
+          <a-col :xs="24" :md="8" :lg="4">
+            <a-form-item>
+              <a-button type="primary" html-type="submit" size="large" block class="add-btn">
+                添加至空间
+              </a-button>
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </a-form>
+    </a-card>
+
+    <div style="margin-bottom: 24px" />
+
+    <a-card class="list-card" :bordered="false">
+      <template #title>
+        <div class="card-header-flex">
+          <span class="card-title"><ordered-list-outlined /> 成员名单 ({{ dataList.length }})</span>
+          <a-button type="link" @click="fetchData"><reload-outlined /> 刷新</a-button>
+        </div>
+      </template>
+
+      <a-table
+        :columns="columns"
+        :data-source="dataList"
+        :pagination="false"
+        class="custom-table"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.dataIndex === 'userInfo'">
+            <div class="user-info-cell">
+              <a-avatar :src="record.userVO?.userAvatar" :size="40" class="avatar-shadow" />
+              <div class="user-meta">
+                <span class="user-name">{{ record.userVO?.userName || '神秘访客' }}</span>
+                <span class="user-account">@{{ record.userVO?.userAccount }}</span>
+              </div>
+            </div>
+          </template>
+
+          <template v-if="column.dataIndex === 'spaceRole'">
+            <a-select
+              v-model:value="record.spaceRole"
+              :options="SPACE_ROLE_OPTIONS"
+              @change="(value) => editSpaceRole(value, record)"
+              class="role-select"
+              :style="{ color: getRoleColor(record.spaceRole) }"
+            >
+              <template #suffixIcon><down-outlined /></template>
+            </a-select>
+          </template>
+
+          <template v-else-if="column.dataIndex === 'createTime'">
+            <span class="time-text">{{ dayjs(record.createTime).format('YYYY-MM-DD HH:mm') }}</span>
+          </template>
+
+          <template v-else-if="column.key === 'action'">
+            <a-popconfirm
+              title="确定要将该成员从空间移除吗？"
+              ok-text="确定"
+              cancel-text="取消"
+              @confirm="doDelete(record.id)"
+            >
+              <a-button type="link" danger class="delete-btn">
+                <template #icon><user-delete-outlined /></template> 移除
+              </a-button>
+            </a-popconfirm>
+          </template>
+        </template>
+      </a-table>
+    </a-card>
   </div>
 </template>
+
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
-import { deleteSpaceUsingPost, listSpaceByPageUsingPost } from '@/api/spaceController.ts'
-import { SPACE_LEVEL_MAP, SPACE_LEVEL_OPTIONS, SPACE_ROLE_OPTIONS } from '../../constants/space.ts'
-import { formatSize } from '../../utils'
+import {
+  TeamOutlined, UserAddOutlined, OrderedListOutlined,
+  ReloadOutlined, IdcardOutlined, UserDeleteOutlined,
+  LeftOutlined, DownOutlined
+} from '@ant-design/icons-vue'
+import { SPACE_ROLE_OPTIONS, SPACE_ROLE_MAP } from '../../constants/space.ts'
 import {
   addSpaceUserUsingPost,
   deleteSpaceUserUsingPost,
   editSpaceUserUsingPost,
   listSpaceUserVoUsingPost
 } from '@/api/spaceUserController.ts'
+import router from "@/router";
 
-// 定义属性
 interface Props {
   spaceId: string
 }
-
 const props = defineProps<Props>()
 
-// 表格列
 const columns = [
-  {
-    title: '用户',
-    dataIndex: 'userInfo',
-  },
-  {
-    title: '角色',
-    dataIndex: 'spaceRole',
-  },
-  {
-    title: '创建时间',
-    dataIndex: 'createTime',
-  },
-  {
-    title: '操作',
-    key: 'action',
-  },
+  { title: '成员', dataIndex: 'userInfo' },
+  { title: '权限角色', dataIndex: 'spaceRole', width: '180px' },
+  { title: '加入时间', dataIndex: 'createTime' },
+  { title: '操作', key: 'action', width: '100px' },
 ]
 
-//数据
 const dataList = ref<API.SpaceUserVO[]>([])
 
-//获取数据
 const fetchData = async () => {
   const spaceId = props.spaceId
-  if (!spaceId) {
-    return
-  }
-  const res = await listSpaceUserVoUsingPost({
-    spaceId,
-  })
+  if (!spaceId) return
+  const res = await listSpaceUserVoUsingPost({ spaceId })
   if (res.data.data) {
     dataList.value = res.data.data ?? []
-  } else {
-    message.error('获取数据失败，' + res.data.message)
   }
 }
 
-//页面挂载好之后获取数据
-onMounted(() => {
-  fetchData()
-})
+onMounted(() => fetchData())
 
 const editSpaceRole = async (value, record) => {
-  const res = await editSpaceUserUsingPost({
-    id: record.id,
-    spaceRole: value,
-  })
+  const res = await editSpaceUserUsingPost({ id: record.id, spaceRole: value })
   if (res.data.code === 0) {
-    message.success('修改成功')
+    message.success('角色权限已更新')
   } else {
-    message.error('修改失败，' + res.data.message)
+    message.error('更新失败：' + res.data.message)
   }
 }
 
-//根据id删除数据
 const doDelete = async (id: string) => {
-  if (!id) {
-    return
-  }
   const res = await deleteSpaceUserUsingPost({ id })
   if (res.data.code === 0) {
-    message.success('删除成功')
-    //重新获取数据
+    message.success('成员已移除')
     fetchData()
-  } else {
-    message.error('删除失败' + res.data.message)
   }
 }
 
-// 添加用户表单
 const formData = reactive<API.SpaceUserAddRequest>({})
-
-// 添加成员
 const handleSubmit = async () => {
-  const spaceId = props.spaceId
-  if (!spaceId) {
-    return
-  }
-  const res = await addSpaceUserUsingPost({
-    spaceId,
-    ...formData,
-  })
+  if (!formData.userId) return message.warning('请输入用户 ID')
+  const res = await addSpaceUserUsingPost({ spaceId: props.spaceId, ...formData })
   if (res.data.code === 0) {
-    message.success('添加成功')
-    // 刷新数据
+    message.success('成员添加成功')
+    formData.userId = undefined
     fetchData()
   } else {
-    message.error('添加失败，' + res.data.message)
+    message.error('添加失败：' + res.data.message)
   }
+}
+
+// 辅助：获取角色对应的颜色
+const getRoleColor = (role: string) => {
+  if (role === 'admin') return '#faad14'
+  if (role === 'editor') return '#1890ff'
+  return '#8c8c8c'
 }
 </script>
 
 <style scoped>
-#spaceManagePage {
+#spaceUserManagePage {
+  padding: 0 10px;
+}
+
+/* 页面头部 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.title-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icon {
+  font-size: 32px;
+  color: #1890ff;
+  background: #e6f7ff;
+  padding: 12px;
+  border-radius: 14px;
+}
+
+.subtitle {
+  color: #8c8c8c;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* 卡片通用 */
+.action-card, .list-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.card-title {
+  font-weight: 700;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 用户单元格 */
+.user-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #262626;
+  line-height: 1.2;
+}
+
+.user-account {
+  font-size: 12px;
+  color: #bfbfbf;
+}
+
+/* 角色选择器 */
+.role-select :deep(.ant-select-selector) {
+  border-radius: 6px !important;
+  font-weight: 600;
+}
+
+.time-text {
+  color: #8c8c8c;
+  font-size: 13px;
+}
+
+.add-btn {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.ghost-btn {
+  border-radius: 8px;
+  color: #8c8c8c;
+}
+
+.delete-btn {
+  font-weight: 600;
+}
+
+.avatar-shadow {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 </style>

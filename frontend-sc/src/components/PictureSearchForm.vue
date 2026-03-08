@@ -1,77 +1,111 @@
 <template>
-  <div class="picture-search-form">
-    <div style="margin-bottom: 16px"></div>
-    <!--  搜索表单  -->
-    <div class="picture-search-form">
-      <!-- 搜索表单 -->
-      <a-form layout="inline" :model="searchParams" @finish="doSearch">
-        <a-form-item label="关键词" name="searchText">
-          <a-input
-            v-model:value="searchParams.searchText"
-            placeholder="从名称和简介搜索"
-            allow-clear
-          />
-        </a-form-item>
-        <a-form-item label="分类" name="category">
-          <a-auto-complete
-            v-model:value="searchParams.category"
-            style="min-width: 180px"
-            :options="categoryOptions"
-            placeholder="请输入分类"
-            allowClear
-          />
-        </a-form-item>
-        <a-form-item label="标签" name="tags">
-          <a-select
-            v-model:value="searchParams.tags"
-            style="min-width: 180px"
-            :options="tagOptions"
-            mode="tags"
-            placeholder="请输入标签"
-            allowClear
-          />
-        </a-form-item>
-        <a-form-item label="日期" name="">
-          <a-range-picker
-            style="width: 400px"
-            show-time
-            v-model:value="dateRange"
-            :placeholder="['编辑开始日期', '编辑结束时间']"
-            format="YYYY/MM/DD HH:mm:ss"
-            :presets="rangePresets"
-            @change="onRangeChange"
-          />
-        </a-form-item>
-        <a-form-item label="名称" name="name">
-          <a-input v-model:value="searchParams.name" placeholder="请输入名称" allow-clear />
-        </a-form-item>
-        <a-form-item label="简介" name="introduction">
-          <a-input v-model:value="searchParams.introduction" placeholder="请输入简介" allow-clear />
-        </a-form-item>
-        <a-form-item label="宽度" name="picWidth">
-          <a-input-number v-model:value="searchParams.picWidth" />
-        </a-form-item>
-        <a-form-item label="高度" name="picHeight">
-          <a-input-number v-model:value="searchParams.picHeight" />
-        </a-form-item>
-        <a-form-item label="格式" name="picFormat">
-          <a-input v-model:value="searchParams.picFormat" placeholder="请输入格式" allow-clear />
-        </a-form-item>
-        <a-form-item>
-          <a-space>
-            <a-button type="primary" html-type="submit" style="width: 96px">搜索</a-button>
-            <a-button html-type="reset" @click="doClear">重置</a-button>
-          </a-space>
-        </a-form-item>
-      </a-form>
-    </div>
-    <div style="margin-bottom: 16px" />
+  <div class="search-form-container">
+    <a-form :model="searchParams" @finish="doSearch" class="refined-search-form">
+      <a-row :gutter="[16, 16]">
+        <a-col :xs="24" :sm="12" :md="8" :lg="6">
+          <a-form-item label="关键词">
+            <a-input
+              v-model:value="searchParams.searchText"
+              placeholder="搜索名称或简介..."
+              allow-clear
+              size="large"
+            >
+              <template #prefix><search-outlined style="color: #bfbfbf" /></template>
+            </a-input>
+          </a-form-item>
+        </a-col>
+
+        <a-col :xs="24" :sm="12" :md="8" :lg="6">
+          <a-form-item label="分类">
+            <a-auto-complete
+              v-model:value="searchParams.category"
+              :options="categoryOptions"
+              placeholder="请选择分类"
+              allowClear
+              size="large"
+            />
+          </a-form-item>
+        </a-col>
+
+        <a-col :xs="24" :sm="12" :md="8" :lg="6">
+          <a-form-item label="标签">
+            <a-select
+              v-model:value="searchParams.tags"
+              :options="tagOptions"
+              mode="tags"
+              placeholder="选择标签"
+              allowClear
+              size="large"
+            />
+          </a-form-item>
+        </a-col>
+
+        <a-col :xs="24" :sm="12" :md="8" :lg="6">
+          <div class="action-buttons">
+            <a-button type="primary" html-type="submit" size="large" class="search-btn">
+              <template #icon><search-outlined /></template> 搜索
+            </a-button>
+            <a-button size="large" @click="doClear" class="reset-btn">
+              <template #icon><reload-outlined /></template> 重置
+            </a-button>
+            <a-button type="link" @click="isExpanded = !isExpanded" class="expand-btn">
+              {{ isExpanded ? '收起' : '高级' }}
+              <up-outlined v-if="isExpanded" />
+              <down-outlined v-else />
+            </a-button>
+          </div>
+        </a-col>
+      </a-row>
+
+      <transition name="expand">
+        <div v-show="isExpanded" class="advanced-section">
+          <a-divider dashed style="margin: 16px 0" />
+          <a-row :gutter="[16, 24]">
+            <a-col :xs="24" :md="12" :lg="10">
+              <a-form-item label="编辑日期">
+                <a-range-picker
+                  v-model:value="dateRange"
+                  style="width: 100%"
+                  show-time
+                  format="YYYY-MM-DD HH:mm"
+                  :presets="rangePresets"
+                  @change="onRangeChange"
+                  :placeholder="['起始时间', '结束时间']"
+                />
+              </a-form-item>
+            </a-col>
+            <a-col :xs="12" :md="6" :lg="4">
+              <a-form-item label="最小宽度">
+                <a-input-number v-model:value="searchParams.picWidth" style="width: 100%" placeholder="px" />
+              </a-form-item>
+            </a-col>
+            <a-col :xs="12" :md="6" :lg="4">
+              <a-form-item label="最小高度">
+                <a-input-number v-model:value="searchParams.picHeight" style="width: 100%" placeholder="px" />
+              </a-form-item>
+            </a-col>
+            <a-col :xs="12" :md="6" :lg="3">
+              <a-form-item label="格式">
+                <a-input v-model:value="searchParams.picFormat" placeholder="webp/jpg" />
+              </a-form-item>
+            </a-col>
+            <a-col :xs="12" :md="6" :lg="3">
+              <a-form-item label="重命名">
+                <a-input v-model:value="searchParams.name" placeholder="名称关键字" />
+              </a-form-item>
+            </a-col>
+          </a-row>
+        </div>
+      </transition>
+    </a-form>
   </div>
 </template>
+
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
+import { SearchOutlined, ReloadOutlined, DownOutlined, UpOutlined } from '@ant-design/icons-vue'
 import { listPictureTagCategoryUsingGet } from '@/api/pictureController.ts'
 
 interface Props {
@@ -79,117 +113,104 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
-//搜索条件
+const isExpanded = ref(false)
 const searchParams = reactive<API.QueryPictureRequest>({})
+const dateRange = ref<any>(null)
 
-// 获取数据
+// 🚀 补齐并增强的预设日期
+const rangePresets = [
+  { label: '最近 7 天', value: [dayjs().subtract(7, 'd'), dayjs()] },
+  { label: '最近 14 天', value: [dayjs().subtract(14, 'd'), dayjs()] },
+  { label: '最近 30 天', value: [dayjs().subtract(30, 'd'), dayjs()] },
+  { label: '最近 90 天', value: [dayjs().subtract(90, 'd'), dayjs()] },
+  { label: '最近一年', value: [dayjs().subtract(1, 'y'), dayjs()] },
+]
+
 const doSearch = () => {
   props.onSearch?.(searchParams)
 }
 
+const categoryOptions = ref<any[]>([])
+const tagOptions = ref<any[]>([])
 
-const categoryOptions = ref<string[]>([])
-const tagOptions = ref<string[]>([])
-
-// 获取标签和分类选项
 const getTagCategoryOptions = async () => {
   const res = await listPictureTagCategoryUsingGet()
   if (res.data.code === 0 && res.data.data) {
-    // 转换成下拉选项组件接受的格式
-    tagOptions.value = (res.data.data.tagList ?? []).map((data: string) => {
-      return {
-        value: data,
-        label: data,
-      }
-    })
-    categoryOptions.value = (res.data.data.categoryList ?? []).map((data: string) => {
-      return {
-        value: data,
-        label: data,
-      }
-    })
-  } else {
-    message.error('加载选项失败，' + res.data.message)
+    tagOptions.value = (res.data.data.tagList ?? []).map((t: string) => ({ value: t, label: t }))
+    categoryOptions.value = (res.data.data.categoryList ?? []).map((c: string) => ({ value: c, label: c }))
   }
 }
 
-onMounted(() => {
-  getTagCategoryOptions()
-})
+onMounted(() => getTagCategoryOptions())
 
-const dateRange = ref<[]>([])
-
-/**
- * 日期范围更改时触发
- * @param dates
- * @param dateStrings
- */
-/*const onRangeChange = (dates: any[], dateStrings: string[]) => {
-  // 关键修改：先判断 dates 是否存在 (不为 null/undefined)
-  // 再判断长度
+const onRangeChange = (dates: any[]) => {
   if (dates && dates.length >= 2) {
     searchParams.startEditTime = dates[0].toDate()
     searchParams.endEditTime = dates[1].toDate()
   } else {
-    // 只有 dates 为 null (清空) 时，才会走到这里
+    dateRange.value = null
     searchParams.startEditTime = undefined
     searchParams.endEditTime = undefined
   }
-}*/
-const onRangeChange = (dates: any[], dateStrings: string[]) => {
-  if (dates && dates.length >= 2) {
-    // 确保拿到的是 dayjs 对象并转为 Date
-    searchParams.startEditTime = dates[0].toDate()
-    searchParams.endEditTime = dates[1].toDate()
-  } else {
-    // 彻底清空，不留死角
-    dateRange.value = null
-    delete searchParams.startEditTime
-    delete searchParams.endEditTime
-  }
 }
 
-const rangePresets = ref([
-  { label: '过去 7 天', value: [dayjs().add(-7, 'd'), dayjs()] },
-  { label: '过去 14 天', value: [dayjs().add(-14, 'd'), dayjs()] },
-  { label: '过去 30 天', value: [dayjs().add(-30, 'd'), dayjs()] },
-  { label: '过去 90 天', value: [dayjs().add(-90, 'd'), dayjs()] },
-])
-
-// 清理
-/*const doClear = () => {
-  // 取消所有对象的值
-  Object.keys(searchParams).forEach((key) => {
-    searchParams[key] = undefined
-  })
-  // 日期筛选项单独清空，必须定义为空数组
-  dateRange.value = []
-  // 清空后重新搜索
-  props.onSearch?.(searchParams)
-}*/
 const doClear = () => {
-  // 1. 彻底重置 searchParams
-  // 不要只设为 undefined，最好直接给个空对象，防止 Proxy 内部还留着旧引用
-  Object.keys(searchParams).forEach((key) => {
-    delete searchParams[key]
-  })
-
-  // 2. 日期组件重置：用 null 而不是 []
-  // 很多 UI 框架清空时识别 null 更加准确
+  Object.keys(searchParams).forEach((key) => delete searchParams[key])
   dateRange.value = null
-
-  // 3. 显式清空 searchParams 里的时间字段
-  searchParams.startEditTime = undefined
-  searchParams.endEditTime = undefined
-
-  // 4. 重新触发搜索
   props.onSearch?.(searchParams)
 }
 </script>
 
 <style scoped>
-.picture-search-form .ant-form-item {
-  margin-top: 16px;
+.search-form-container {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  margin-bottom: 24px;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.search-btn {
+  border-radius: 8px;
+  background: #1890ff;
+  flex: 1;
+}
+
+.reset-btn {
+  border-radius: 8px;
+}
+
+.expand-btn {
+  padding: 0 4px;
+  color: #8c8c8c;
+  font-size: 13px;
+}
+
+.expand-enter-active, .expand-leave-active {
+  transition: all 0.3s ease;
+  max-height: 300px;
+  overflow: hidden;
+}
+.expand-enter-from, .expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+:deep(.ant-form-item) {
+  margin-bottom: 0;
+}
+
+:deep(.ant-form-item-label) {
+  font-weight: 600;
+  color: #4b5563;
+  padding-bottom: 4px;
 }
 </style>

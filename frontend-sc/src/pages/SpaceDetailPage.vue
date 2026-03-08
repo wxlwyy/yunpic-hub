@@ -17,9 +17,21 @@
           <div class="space-text-info">
             <h2 class="space-title">
               {{ space.spaceName }}
-              <a-tag :color="space.spaceType === SPACE_TYPE_ENUM.TEAM ? 'cyan' : 'blue'" class="type-tag">
-                {{ SPACE_TYPE_MAP[space.spaceType] }}
-              </a-tag>
+              <a-space :size="8">
+                <a-tag :color="space.spaceType === SPACE_TYPE_ENUM.TEAM ? 'cyan' : 'blue'" class="type-tag">
+                  {{ SPACE_TYPE_MAP[space.spaceType] }}
+                </a-tag>
+
+                <a-tooltip title="您在该空间的当前角色权限">
+                  <a-tag :color="currentRoleInfo.color" class="role-tag-premium">
+                    <template #icon>
+                      <SafetyCertificateOutlined v-if="currentRoleInfo.text === '管理员'" />
+                      <UserOutlined v-else />
+                    </template>
+                    {{ currentRoleInfo.text }}
+                  </a-tag>
+                </a-tooltip>
+              </a-space>
             </h2>
             <p class="space-stats">
               当前包含 <strong class="highlight">{{ total }}</strong> 张图片，上限 {{ space.maxCount }} 张
@@ -44,7 +56,7 @@
               type="primary"
               ghost
               class="modern-btn"
-              :href="`/spaceUserManage/${id}`"
+              @click="router.push(`/spaceUserManage/${id}`)"
               target="_blank"
             >
               <template #icon><TeamOutlined /></template> 成员管理
@@ -140,7 +152,31 @@ import {
   CloudUploadOutlined, SearchOutlined, BgColorsOutlined
 } from '@ant-design/icons-vue'
 import BatchEditPictureModal from '@/components/BatchEditPictureModal.vue'
-import { SPACE_PERMISSION_ENUM, SPACE_TYPE_ENUM, SPACE_TYPE_MAP } from '../constants/space.ts'
+import {
+  SPACE_ROLE_ENUM,
+  SPACE_ROLE_MAP,
+  SPACE_TYPE_ENUM,
+  SPACE_TYPE_MAP,
+  SPACE_PERMISSION_ENUM
+} from '../constants/space.ts'
+import { SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons-vue'
+import router from "@/router";
+
+// 🚀 核心修复：通过权限列表【反推】当前用户的角色勋章
+const currentRoleInfo = computed(() => {
+  const perms = space.value.permissionList ?? [];
+
+  // 1. 如果有【管理空间用户】的权限，那绝对是最高级别的“管理员”
+  if (perms.includes(SPACE_PERMISSION_ENUM.SPACE_USER_MANAGE)) {
+    return { text: SPACE_ROLE_MAP[SPACE_ROLE_ENUM.ADMIN], color: 'orange' };
+  }
+  // 2. 如果没有管理权限，但有【编辑图片】的权限，那就是“编辑者”
+  if (perms.includes(SPACE_PERMISSION_ENUM.PICTURE_EDIT)) {
+    return { text: SPACE_ROLE_MAP[SPACE_ROLE_ENUM.EDITOR], color: 'blue' };
+  }
+  // 3. 如果啥高级权限都没，保底就是个“浏览者”
+  return { text: SPACE_ROLE_MAP[SPACE_ROLE_ENUM.VIEWER], color: 'green' };
+})
 
 const props = defineProps<{ id: string | number }>()
 const space = ref<API.SpaceVO>({})
@@ -158,6 +194,7 @@ const getStorageColor = (percent: number) => {
   if (percent >= 70) return '#faad14' // 预警黄
   return '#10b981' // 健康绿
 }
+
 
 function createPermissionChecker(permission: string) {
   return computed(() => (space.value.permissionList ?? []).includes(permission))
