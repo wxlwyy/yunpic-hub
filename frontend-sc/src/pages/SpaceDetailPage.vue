@@ -46,8 +46,7 @@
               type="primary"
               ghost
               class="modern-btn"
-              :href="`/space_analyze?spaceId=${id}`"
-              target="_blank"
+              @click="router.push({ path: '/space_analyze', query: { spaceId: id } })"
             >
               <template #icon><BarChartOutlined /></template> 空间分析
             </a-button>
@@ -57,7 +56,6 @@
               ghost
               class="modern-btn"
               @click="router.push(`/spaceUserManage/${id}`)"
-              target="_blank"
             >
               <template #icon><TeamOutlined /></template> 成员管理
             </a-button>
@@ -68,8 +66,7 @@
               v-if="canUploadPicture"
               type="primary"
               class="modern-btn upload-btn"
-              :href="`/add_picture?spaceId=${id}`"
-              target="_blank"
+              @click="router.push({ path: '/add_picture', query: { spaceId: id } })"
             >
               <template #icon><CloudUploadOutlined /></template> 上传图片
             </a-button>

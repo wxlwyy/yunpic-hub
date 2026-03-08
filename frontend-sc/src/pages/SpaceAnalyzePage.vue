@@ -22,7 +22,7 @@
         </div>
       </div>
 
-      <a-tag v-if="spaceId" color="blue" class="id-tag" @click="router.push(`/space/${spaceId}`)">
+      <a-tag v-if="spaceId" color="blue" class="id-tag" @click="handleBack">
         <template #icon><LinkOutlined /></template>
         空间 ID: {{ spaceId }}
       </a-tag>
@@ -121,13 +121,33 @@ const fetchSpace = async () => {
 }
 
 const handleBack = () => {
-  if (isAdmin.value) {
+  // 1. 全局或公共视角：这是纯粹的管理功能，必须回管理后台
+  if (queryAll.value || queryPublic.value) {
     router.push('/admin/spaceManage')
-  } else if (spaceId.value) {
-    router.push(`/space/${spaceId.value}`)
-  } else {
-    router.back()
+    return
   }
+
+  // 2. 针对特定空间的分析（spaceId 存在）
+  if (spaceId.value) {
+    // 🚀 核心修复：如果是管理员，得看这空间是不是他自己的
+    if (isAdmin.value) {
+      // 只有空间数据已加载，且 space 里的 userId 等于当前登录者的 id，才叫“回自己家”
+      // 注意：如果数据还没加载完 (space 为空)，管理员默认回管理页，安全第一
+      if (space.value && space.value.userId === loginUser.id) {
+        router.push(`/space/${spaceId.value}`)
+      } else {
+        // 分析的是别人的空间，管理员点击返回，应该回【管理后台】继续查下一个人
+        router.push('/admin/spaceManage')
+      }
+    } else {
+      // 普通用户：没那么多心眼，直接回自己的空间详情
+      router.push(`/space/${spaceId.value}`)
+    }
+    return
+  }
+
+  // 3. 兜底逻辑：回上一页
+  router.back()
 }
 
 // 4. 最后开启监听 (此时 spaceId 和 fetchSpace 都已经就绪了)
