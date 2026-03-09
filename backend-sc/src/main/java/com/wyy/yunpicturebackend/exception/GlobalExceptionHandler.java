@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolationException;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,66 +29,48 @@ public class GlobalExceptionHandler {
         return String.format("[User: %s] [Trace: %s]", userId, traceId);
     }
 
+    //  1. 未登录异常
     @ExceptionHandler(NotLoginException.class)
-    public BaseResponse<?> notLoginExceptionHandler(NotLoginException e){
-        // 业务校验失败，用 warn，且不打印满屏堆栈
+    public BaseResponse<?> notLoginExceptionHandler(NotLoginException e, HttpServletRequest request){
         log.warn("\n[Not Login] {}\n" +
+                        "Request URI: {}\n" +
                         "Message: {}\n" +
                         "--------------------------------------------------",
-                getLogPrefix(), e.getMessage());
+                getLogPrefix(), request.getRequestURI(), e.getMessage());
         return ResultUtils.error(ErrorCode.NOT_LOGIN_ERROR, e.getMessage());
     }
 
+    //  2. 无权限异常
     @ExceptionHandler(NotPermissionException.class)
-    public BaseResponse<?> notPermissionExceptionHandler(NotPermissionException e){
+    public BaseResponse<?> notPermissionExceptionHandler(NotPermissionException e, HttpServletRequest request){
         log.warn("\n[No Permission] {}\n" +
+                        "Request URI: {}\n" +
                         "Message: {}\n" +
                         "--------------------------------------------------",
-                getLogPrefix(), e.getMessage());
+                getLogPrefix(), request.getRequestURI(), e.getMessage());
         return ResultUtils.error(ErrorCode.NO_AUTH_ERROR, e.getMessage());
     }
 
+    //  3. 业务异常 (彻底抛弃繁琐的堆栈解析！)
     @ExceptionHandler(BusinessException.class)
-    public BaseResponse<?> businessExceptionHandler(BusinessException e) {
-        StackTraceElement[] stackTrace = e.getStackTrace();
-        List<String> paths = new ArrayList<>();
-
-        String projectBasePackage = "com.wyy.yunpicturebackend";
-
-        for (StackTraceElement element : stackTrace) {
-            String className = element.getClassName();
-            // 依然过滤掉噪音
-            if (className.contains(projectBasePackage) && !className.contains("$$") && !className.contains("exception")) {
-                // 核心改动：构造 IDE 能够识别的“魔法格式”
-                // 格式必须是：类名.方法名(文件名:行号)
-                String linkFormat = String.format("%s.%s(%s:%d)",
-                        className,
-                        element.getMethodName(),
-                        element.getFileName(),
-                        element.getLineNumber());
-                paths.add(linkFormat);
-
-                if (paths.size() >= 3) break;
-            }
-        }
-
+    public BaseResponse<?> businessExceptionHandler(BusinessException e, HttpServletRequest request) {
         log.warn("\n[Business Exception] {}\n" +
+                        "Request URI: {}\n" +
                         "Code: {}\n" +
                         "Message: {}\n" +
-                        "Trace: {}\n" +
                         "--------------------------------------------------",
-                getLogPrefix(), e.getCode(), e.getMessage(), String.join("\n    <- ", paths));
-
+                getLogPrefix(), request.getRequestURI(), e.getCode(), e.getMessage());
         return ResultUtils.error(e.getCode(), e.getMessage());
     }
 
+    //  4. 系统异常 (这个保留堆栈，因为是真 Bug，并加上 URI 方便复现)
     @ExceptionHandler(RuntimeException.class)
-    public BaseResponse<?> runtimeExceptionHandler(RuntimeException e){
-        // 系统崩了：保留完整的 e（堆栈信息），加上 TraceID 方便和 SQL 对应
+    public BaseResponse<?> runtimeExceptionHandler(RuntimeException e, HttpServletRequest request){
         log.error("\n[System Error] {}\n" +
+                        "Request URI: {}\n" +
                         "Message: 系统发生未知异常！\n" +
                         "--------------------------------------------------",
-                getLogPrefix(), e); // 这里的 e 必须保留，用来排查致命 Bug
+                getLogPrefix(), request.getRequestURI(), e);
         return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "系统错误");
     }
 
@@ -98,11 +81,12 @@ public class GlobalExceptionHandler {
      * 触发场景：POST/PUT 请求连 {} 都没有，或者 JSON 格式写错了（比如少个逗号）
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public BaseResponse<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+    public BaseResponse<?> handleHttpMessageNotReadableException(HttpMessageNotReadableException e, HttpServletRequest request) {
         log.warn("\n[Parameter Empty] {}\n" +
+                        "Request URI: {}\n" +
                         "Message: 请求体为空或格式错误\n" +
                         "--------------------------------------------------",
-                getLogPrefix());
+                getLogPrefix(), request.getRequestURI());
         return ResultUtils.error(ErrorCode.PARAMS_ERROR, "请求体不可为空");
     }
 
@@ -111,32 +95,19 @@ public class GlobalExceptionHandler {
      * 触发场景：@Validated 校验失败（例如 @NotBlank, @Size 等不通过）
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public BaseResponse<?> handleValidationException(MethodArgumentNotValidException e) {
+    public BaseResponse<?> handleValidationException(MethodArgumentNotValidException e, HttpServletRequest request) {
         BindingResult bindingResult = e.getBindingResult();
         String errorMessage = "参数错误";
         if (bindingResult.hasErrors()) {
             FieldError fieldError = bindingResult.getFieldErrors().get(0);
-            // 提取出我们在 DTO 上写的 message，比如 "昵称不能为空"
             errorMessage = fieldError.getDefaultMessage();
         }
 
-        // 同样提取路径，方便快速定位是哪个 Controller 的哪个字段报错
-        StackTraceElement[] stackTrace = e.getStackTrace();
-        String path = "Unknown Path";
-        for (StackTraceElement element : stackTrace) {
-            if (element.getClassName().contains("com.wyy.yunpicturebackend")) {
-                path = String.format("%s.%s(%s:%d)",
-                        element.getClassName(), element.getMethodName(),
-                        element.getFileName(), element.getLineNumber());
-                break;
-            }
-        }
-
         log.warn("\n[Validation Error] {}\n" +
+                        "Request URI: {}\n" +
                         "Message: {}\n" +
-                        "Location: {}\n" +
                         "--------------------------------------------------",
-                getLogPrefix(), errorMessage, path);
+                getLogPrefix(), request.getRequestURI(), errorMessage);
 
         return ResultUtils.error(ErrorCode.PARAMS_ERROR, errorMessage);
     }
@@ -146,14 +117,17 @@ public class GlobalExceptionHandler {
      * 触发场景：@RequestParam 标注的参数不符合 @NotNull, @Min 等
      */
     @ExceptionHandler(ConstraintViolationException.class)
-    public BaseResponse<?> handleConstraintViolationException(ConstraintViolationException e) {
-        // 提取具体的错误信息（通常是：方法名.参数名: 错误描述）
+    public BaseResponse<?> handleConstraintViolationException(ConstraintViolationException e, HttpServletRequest request) {
         String message = e.getMessage();
+        if (message != null && message.contains(":")) {
+            message = message.substring(message.lastIndexOf(":") + 1).trim();
+        }
 
         log.warn("\n[Constraint Violation] {}\n" +
+                        "Request URI: {}\n" +
                         "Message: {}\n" +
                         "--------------------------------------------------",
-                getLogPrefix(), message);
+                getLogPrefix(), request.getRequestURI(), message);
 
         return ResultUtils.error(ErrorCode.PARAMS_ERROR, message);
     }
