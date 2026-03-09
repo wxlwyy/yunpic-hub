@@ -13,7 +13,7 @@
           <img src="@/assets/logo.png" alt="logo" class="logo" />
           <h2 class="title">云图库</h2>
         </div>
-        <div class="desc">加入我们 · 开启你的视觉管理之旅</div>
+        <div class="desc">开启你的视觉管理之旅</div>
       </div>
 
       <a-form :model="formState" name="basic" autocomplete="off" @finish="handleSubmit">

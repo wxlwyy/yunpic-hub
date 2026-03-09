@@ -40,8 +40,12 @@
 
               <template #overlay>
                 <a-menu class="dropdown-menu">
-                  <a-menu-item key="my_space" @click="router.push('/my_space')">
+                  <a-menu-item @click="router.push('/my_settings')">
                     <template #icon><UserOutlined /></template>
+                    个人中心
+                  </a-menu-item>
+                  <a-menu-item key="my_space" @click="router.push('/my_space')">
+                    <template #icon><CloudOutlined /></template>
                     我的空间
                   </a-menu-item>
                   <a-menu-divider />
@@ -66,7 +70,7 @@
 
 <script lang="ts" setup>
 import { computed, h, ref } from 'vue'
-import { HomeOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons-vue';
+import { HomeOutlined, UserOutlined, LogoutOutlined, CloudOutlined } from '@ant-design/icons-vue';
 import { MenuProps, message } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'

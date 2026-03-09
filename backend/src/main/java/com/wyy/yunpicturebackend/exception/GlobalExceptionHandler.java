@@ -30,6 +30,18 @@ public class GlobalExceptionHandler {
         return ResultUtils.error(ErrorCode.NO_AUTH_ERROR, e.getMessage());
     }
 
+	@ExceptionHandler(BusinessException.class)
+    public BaseResponse<?> businessExceptionHandler(BusinessException e){
+        log.error("BusinessException", e);
+        return ResultUtils.error(e.getCode(), e.getMessage());
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public BaseResponse<?> runtimeExceptionHandler(RuntimeException e){
+        log.error("RuntimeException", e);
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "系统错误");
+    }
+
     /**
      * 接住Controller层请求参数为空的异常（什么参数都不传，连{}都没有）
      * @param e
@@ -68,17 +80,5 @@ public class GlobalExceptionHandler {
     public BaseResponse<?> handleConstraintViolationException(ConstraintViolationException e) {
         log.error("单参数校验异常: {}", e.getMessage());
         return ResultUtils.error(ErrorCode.PARAMS_ERROR, e.getMessage());
-    }
-
-    @ExceptionHandler(BusinessException.class)
-    public BaseResponse<?> businessExceptionHandler(BusinessException e){
-        log.error("BusinessException", e);
-        return ResultUtils.error(e.getCode(), e.getMessage());
-    }
-
-    @ExceptionHandler(RuntimeException.class)
-    public BaseResponse<?> runtimeExceptionHandler(RuntimeException e){
-        log.error("RuntimeException", e);
-        return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "系统错误");
     }
 }

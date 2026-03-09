@@ -14,6 +14,7 @@ import SpaceDetailPage from '@/pages/SpaceDetailPage.vue'
 import SearchPicturePage from '@/pages/SearchPicturePage.vue'
 import SpaceAnalyzePage from '@/pages/SpaceAnalyzePage.vue'
 import SpaceUserManagePage from '@/pages/admin/SpaceUserManagePage.vue'
+import MySettingsPage from "@/pages/MySettingsPage.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -68,6 +69,11 @@ const router = createRouter({
       path: '/my_space',
       name: '我的空间',
       component: MySpacePage,
+    },
+    {
+      path: '/my_settings',
+      name: '个人中心',
+      component: MySettingsPage,
     },
     {
       path: '/add_picture/batch',

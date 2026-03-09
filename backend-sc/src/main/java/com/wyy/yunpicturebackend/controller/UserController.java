@@ -7,6 +7,7 @@ import com.wyy.yunpicturebackend.common.BaseResponse;
 import com.wyy.yunpicturebackend.common.DeleteRequest;
 import com.wyy.yunpicturebackend.common.ResultUtils;
 import com.wyy.yunpicturebackend.constant.UserConstant;
+import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.model.dto.user.*;
@@ -14,7 +15,9 @@ import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.vo.LoginUserVO;
 import com.wyy.yunpicturebackend.model.vo.UserVO;
 import com.wyy.yunpicturebackend.service.UserService;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -22,6 +25,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/user")
+@Validated
 public class UserController {
 
     @Resource
@@ -123,6 +127,45 @@ public class UserController {
         boolean success = userService.updateById(user);
         ThrowUtils.throwIf(!success, ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(true);
+    }
+
+    /**
+     * 上传用户头像
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    @PostMapping("/upload/avatar")
+    public BaseResponse<String> uploadUserAvatar(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest request) {
+        ThrowUtils.throwIf(multipartFile == null, ErrorCode.PARAMS_ERROR, "请选择头像文件");
+        String avatarUrl = userService.uploadUserAvatar(multipartFile, request);
+        return ResultUtils.success(avatarUrl);
+    }
+
+    /**
+     * 用户修改自己的信息
+     * @param userUpdateMyRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/update/my")
+    public BaseResponse<Boolean> updateMyUser(@RequestBody @Validated UserUpdateMyRequest userUpdateMyRequest,
+                                              HttpServletRequest request) {
+        boolean result = userService.updateMyUser(userUpdateMyRequest, request);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 兑换VIP功能
+     * @param userExchangeVipRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/exchange/vip")
+    public BaseResponse<Boolean> exchangeVip(@RequestBody @Validated UserExchangeVipRequest userExchangeVipRequest,
+                                             HttpServletRequest request) {
+        boolean result = userService.exchangeVip(userExchangeVipRequest, request);
+        return ResultUtils.success(result);
     }
 
     /**

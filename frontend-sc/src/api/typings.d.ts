@@ -688,6 +688,10 @@ declare namespace API {
     userRole?: string
   }
 
+  type UserExchangeVipRequest = {
+    vipCode?: string
+  }
+
   type UserLoginRequest = {
     userAccount?: string
     userPassword?: string
@@ -697,6 +701,12 @@ declare namespace API {
     checkPassword?: string
     userAccount?: string
     userPassword?: string
+  }
+
+  type UserUpdateMyRequest = {
+    userAvatar?: string
+    userName?: string
+    userProfile?: string
   }
 
   type UserVO = {
