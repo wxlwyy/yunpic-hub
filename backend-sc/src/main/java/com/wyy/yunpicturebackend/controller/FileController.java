@@ -34,7 +34,7 @@ public class FileController {
      * @param multipartFile
      * @return
      */
-    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(anyRole = {UserConstant.ADMIN_ROLE})
     @PostMapping("/test/upload")
     public BaseResponse<String> testUploadFile(@RequestPart MultipartFile multipartFile){
         String filename = multipartFile.getOriginalFilename();
@@ -66,7 +66,7 @@ public class FileController {
      * @param response
      * @throws IOException
      */
-    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(anyRole = {UserConstant.ADMIN_ROLE})
     @PostMapping("/test/download")
     public void testDownloadFile(String filepath, HttpServletResponse response) throws IOException {
         InputStream cosObjInputStream = cosManager.getObjectContent(filepath);

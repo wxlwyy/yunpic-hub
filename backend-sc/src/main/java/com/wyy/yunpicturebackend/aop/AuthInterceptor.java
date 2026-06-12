@@ -28,27 +28,29 @@ public class AuthInterceptor {
 
     @Around("@annotation(authCheck)")
     public Object doInterceptor(ProceedingJoinPoint joinPoint, AuthCheck authCheck) throws Throwable {
-        //首先得确保登录状态：获取request对象，取出当前登录状态的用户信息，和枚举类比较
-        RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
-        HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
-//        UserRoleEnum loginRoleEnum = UserRoleEnum.getEnumByValue(currentUserRole);
-        //判断当前方法需要的角色，没有要求则直接放行
-        String requiredRole = authCheck.requiredRole();
-        // 3. 如果注解没要求权限，直接放行
-        if (StrUtil.isBlank(requiredRole)) {
+        // 获取允许访问的角色列表
+        String[] allowedRoles = authCheck.anyRole();
+
+        // 如果没有配置角色要求，直接放行
+        if (allowedRoles == null || allowedRoles.length == 0) {
             return joinPoint.proceed();
         }
-        /*//当前方法所需的角色是管理员，当前登录的角色也是管理员
-        if (UserRoleEnum.ADMIN.getValue().equals(requiredRole) && !UserRoleEnum.ADMIN.getValue().equals(currentUserRole)){
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }*/
+
+        // 获取当前登录用户
+        RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
+        HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
         User user = userService.getLoginUser(request);
         String currentUserRole = user.getUserRole();
-        int currentLevel = UserRoleEnum.getLevelByValue(currentUserRole);
-        int requiredLevel = UserRoleEnum.getLevelByValue(requiredRole);
-        if (currentLevel < requiredLevel) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "您的权限不足（仅限VIP或管理员使用）");
+
+        // 判断用户角色是否在允许的角色列表中
+        for (String allowedRole : allowedRoles) {
+            if (allowedRole.equals(currentUserRole)) {
+                // 角色匹配，放行
+                return joinPoint.proceed();
+            }
         }
-        return joinPoint.proceed();
+
+        // 用户角色不在允许列表中，拒绝访问
+        throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "权限不足，需要以下任一角色：" + String.join("、", allowedRoles));
     }
 }
