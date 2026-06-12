@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
                         "Message: {}\n" +
                         "--------------------------------------------------",
                 getLogPrefix(), request.getRequestURI(), e.getCode(), e.getMessage());
-        return ResultUtils.error(e.getCode(), e.getMessage());
+        return new BaseResponse<>(e.getCode(), null, e.getMessage());
     }
 
     //  4. 系统异常 (这个保留堆栈，因为是真 Bug，并加上 URI 方便复现)

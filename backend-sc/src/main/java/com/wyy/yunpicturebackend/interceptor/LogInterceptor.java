@@ -27,7 +27,7 @@ public class LogInterceptor implements HandlerInterceptor {
         Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
 
         if (userObj != null) {
-            // 🚀 核心改进：强转为 User 对象（根据你项目的实际类名改，比如 User 或 LoginUserVO）
+            // 核心改进：强转为 User 对象（根据你项目的实际类名改，比如 User 或 LoginUserVO）
             User user = (User) userObj;
             if (user.getId() != null) {
                 userIdStr = String.valueOf(user.getId());

@@ -90,7 +90,7 @@
               </a-form-item>
             </a-col>
             <a-col :xs="12" :md="6" :lg="3">
-              <a-form-item label="重命名">
+              <a-form-item label="图片名称">
                 <a-input v-model:value="searchParams.name" placeholder="名称关键字" />
               </a-form-item>
             </a-col>
@@ -155,9 +155,28 @@ const onRangeChange = (dates: any[]) => {
 }
 
 const doClear = () => {
-  Object.keys(searchParams).forEach((key) => delete searchParams[key])
+  // 1. 彻底清空 reactive 对象，不建议用 delete，建议用 Object.assign
+  // 这样可以保留响应性，同时把所有属性置空
+  Object.assign(searchParams, {
+    searchText: undefined,
+    category: undefined,
+    tags: undefined,
+    picWidth: undefined,
+    picHeight: undefined,
+    picFormat: undefined,
+    name: undefined,
+    startEditTime: undefined,
+    endEditTime: undefined,
+  })
+
+  // 2. 清空 UI 组件关联的临时变量
   dateRange.value = null
-  props.onSearch?.(searchParams)
+
+  // 3. 关键：通知父组件以“空参数”重新执行一次搜索
+  // 这里建议直接调用 doSearch()，确保逻辑统一
+  props.onSearch?.({ ...searchParams })
+
+  message.success('已重置搜索条件')
 }
 </script>
 

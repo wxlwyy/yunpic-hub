@@ -158,6 +158,7 @@ import {
 } from '../constants/space.ts'
 import { SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons-vue'
 import router from "@/router";
+import {useRoute} from "vue-router";
 
 // 🚀 核心修复：通过权限列表【反推】当前用户的角色勋章
 const currentRoleInfo = computed(() => {
@@ -225,18 +226,29 @@ const fetchSpaceDetail = async () => {
 const pictureList = ref([])
 const total = ref(0)
 const loading = ref(true)
+const route = useRoute()
 
 const searchParams = ref<API.QueryPictureRequest>({
-  current: 1,
+  current: Number(route.query.current),
   pageSize: 12,
   sortField: 'createTime',
   sortOrder: 'descend',
 })
 
+// 当用户点击翻页时触发的方法
 const onPageChange = (page: number, pageSize: number) => {
-  searchParams.value.current = page
-  searchParams.value.pageSize = pageSize
-  fetchPictureVoList()
+  searchParams.current = page
+  searchParams.pageSize = pageSize
+
+  // 🚀 关键：翻页时，顺手把页码塞进 URL 里，但不刷新页面
+  router.push({
+    query: {
+      ...route.query,
+      current: page,
+    },
+  })
+
+  fetchPictureVoList() // 重新请求数据
 }
 
 const fetchPictureVoList = async () => {

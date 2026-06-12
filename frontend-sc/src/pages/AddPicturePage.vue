@@ -149,13 +149,19 @@ const onSuccess = (newPicture: API.PictureVO) => {
   pictureForm.name = newPicture.name
 }
 
+// AddPicturePage.vue
 const handleSubmit = async (values: any) => {
   const pictureId = picture.value?.id
   if (!pictureId) return
   const res = await editPictureUsingPost({ id: pictureId, spaceId: spaceId.value, ...values })
   if (res.data.code === 0) {
     message.success('保存成功')
-    router.push({ path: `/picture/${pictureId}` })
+
+    // 🚀 核心改动：直接后退！
+    // 因为你刚才从详情页过来，后退一步就正好回到详情页。
+    // 详情页重新挂载会自动触发 fetchPictureDetail，数据就是最新的。
+    router.back()
+
   } else {
     message.error('保存失败，' + res.data.message)
   }

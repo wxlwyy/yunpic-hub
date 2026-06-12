@@ -9,6 +9,14 @@
             <a-form layout="vertical" :model="userForm" @finish="handleUpdate">
               <a-row :gutter="48">
                 <a-col :xs="24" :md="16">
+                  <a-form-item label="我的 ID (协作邀请码)">
+                    <a-typography-text copyable code style="font-size: 16px; color: #1890ff">
+                      {{ loginUserStore.loginUser.id }}
+                    </a-typography-text>
+                    <div style="font-size: 12px; color: #999; margin-top: 4px">
+                      这是您的唯一身份标识，您可以将其发送给空间管理员以便受邀加入团队。
+                    </div>
+                  </a-form-item>
                   <a-form-item label="用户昵称" name="userName">
                     <a-input v-model:value="userForm.userName" placeholder="起个响亮的昵称吧" />
                   </a-form-item>

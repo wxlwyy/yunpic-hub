@@ -105,10 +105,10 @@
             <version>5.8.38</version>
         </dependency>
 
-        <!--mybatisplus：https://baomidou.com/-->
+        <!--mybatisplus（注意mp的这个版本只能搭springboot的2版本）：https://baomidou.com/-->
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>  
             <version>3.5.12</version>
         </dependency>
 

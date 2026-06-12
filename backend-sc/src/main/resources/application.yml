@@ -16,7 +16,7 @@ spring:  #应用名称
   datasource:  # 数据库配置
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/yun_picture
-    password: 123456
+    password: 147258
     username: root  #这里一定要注意不是name（数据源名称）而是username！！！
   redis:  # Redis 配置
     database: 0
@@ -41,7 +41,7 @@ spring:  #应用名称
         driver-class-name: com.mysql.cj.jdbc.Driver
         url: jdbc:mysql://localhost:3306/yun_picture?allowPublicKeyRetrieval=true
         username: root
-        password: 123456
+        password: 147258
     rules:
       sharding:
         tables:
@@ -63,7 +63,7 @@ spring:  #应用名称
 mybatis-plus:  #mybatisplus配置
   configuration:
     map-underscore-to-camel-case: false  #关闭下划线转驼峰功能
-#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  #打印sql日志（只在开发环境开启）
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  #打印sql日志（只在开发环境开启，部署时要注释掉！！！）
   global-config:  #全局逻辑删除配置
     db-config:
       logic-delete-field: isDelete # 全局逻辑删除字段名

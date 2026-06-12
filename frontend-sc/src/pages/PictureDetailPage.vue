@@ -4,7 +4,7 @@
       <div class="immersive-bg" :style="{ backgroundImage: `url(${picture.url})` }"></div>
 
       <div class="content-wrapper">
-        <div class="floating-back" @click="router.back()">
+        <div class="floating-back" @click="doBack">
           <LeftOutlined />
           <span>返回</span>
         </div>
@@ -93,7 +93,7 @@
       >
         <template #extra>
           <a-space size="large">
-            <a-button size="large" @click="router.back()">
+            <a-button size="large" @click="doBack">
               <LeftOutlined /> 返回画廊
             </a-button>
             <a-button type="primary" size="large" @click="router.push('/user/login')">
@@ -164,6 +164,13 @@ const doEdit = () => {
     path: '/add_picture',
     query: { id: picture.value.id, spaceId: picture.value.spaceId },
   })
+}
+
+// PictureDetailPage.vue
+const doBack = () => {
+  // 啥也不管，直接后退
+  // 只要是通过列表点进来的，它会带你回到当时的页码（第5页还是第几页都行）
+  router.back()
 }
 
 const doDelete = async () => {
