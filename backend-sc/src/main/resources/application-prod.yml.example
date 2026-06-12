@@ -1,0 +1,26 @@
+# 生产环境配置模板
+# 使用方法：
+# 1. 复制此文件为 application-prod.yml
+# 2. 填写真实的生产环境密码
+# 3. 上传到服务器的 resources 目录
+# 4. 启动时指定：java -jar app.jar --spring.profiles.active=prod
+
+# MySQL 密码（生产环境）
+MYSQL_PASSWORD: your_production_mysql_password
+
+# Redis 密码（生产环境）
+REDIS_PASSWORD: your_production_redis_password
+
+# 腾讯云 COS 配置（生产环境）
+cos:
+  client:
+    host: your-bucket.cos.ap-region.myqcloud.com
+    bucket: your-bucket
+    region: ap-region
+    secret-id: your_production_secret_id
+    secret-key: your_production_secret_key
+
+# 阿里云 AI 服务（生产环境）
+aliyunAi:
+  apiKey: your_production_api_key
+  model: image-out-painting
