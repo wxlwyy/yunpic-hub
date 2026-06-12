@@ -1,0 +1,25 @@
+# Claude Code AI 编程工具
+.claude/
+
+# 操作系统
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.bak
+.temp/
+
+
