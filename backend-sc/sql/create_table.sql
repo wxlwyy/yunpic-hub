@@ -107,3 +107,15 @@ create table if not exists space
     index idx_spaceName (spaceName),  -- 提升基于空间名称的查询效率
     index idx_spaceLevel (spaceLevel) -- 提升按空间级别查询的效率
 ) comment '空间' collate = utf8mb4_unicode_ci;
+
+-- 空间成员表
+CREATE TABLE IF NOT EXISTS space_user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    space_id BIGINT NOT NULL COMMENT '空间ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    space_role VARCHAR(50) NOT NULL COMMENT '空间角色：viewer/editor/admin',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '成员加入时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改成员角色时间',
+    INDEX idx_space_id(space_id),
+    INDEX idx_user_id(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='空间成员表';

@@ -12,18 +12,21 @@ import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
 import com.wyy.yunpicturebackend.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.manager.auth.StpKit;
-import com.wyy.yunpicturebackend.model.dto.user.QueryUserRequest;
-import com.wyy.yunpicturebackend.model.dto.user.UserLoginRequest;
-import com.wyy.yunpicturebackend.model.dto.user.UserRegisterRequest;
+import com.wyy.yunpicturebackend.manager.upload.UploadFilePicture;
+import com.wyy.yunpicturebackend.model.dto.file.UploadPictureResult;
+import com.wyy.yunpicturebackend.model.dto.user.*;
 import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.enums.UserRoleEnum;
 import com.wyy.yunpicturebackend.model.vo.LoginUserVO;
 import com.wyy.yunpicturebackend.model.vo.UserVO;
 import com.wyy.yunpicturebackend.service.UserService;
 import com.wyy.yunpicturebackend.mapper.UserMapper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +40,9 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     implements UserService {
+
+    @Resource
+    private UploadFilePicture uploadFilePicture;
 
     /**
      * 用户注册
@@ -227,6 +233,87 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public boolean isAdmin(User user) {
         return user != null && UserConstant.ADMIN_ROLE.equals(user.getUserRole());
+    }
+
+    /**
+     * 用户修改自己的信息
+     * @param userUpdateMyRequest
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean updateMyUser(UserUpdateMyRequest userUpdateMyRequest, HttpServletRequest request) {
+        // 1. 获取当前登录用户（
+        User loginUser = getLoginUser(request);
+
+        // 2. 创建一个更新对象，只拷贝允许修改的字段
+        User user = new User();
+        BeanUtils.copyProperties(userUpdateMyRequest, user);
+
+        // 3. 关键：强制设置 ID，确保只改自己
+        user.setId(loginUser.getId());
+
+        // 4. 执行更新
+        return updateById(user);
+    }
+
+    /**
+     * 上传用户头像
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    @Override
+    public String uploadUserAvatar(MultipartFile multipartFile, HttpServletRequest request) {
+        // 1. 获取当前登录用户
+        User loginUser = this.getLoginUser(request);
+
+        // 2. 准备上传前缀（路径）：avatar/用户ID
+        // 这样同一个用户的头像永远会覆盖之前的，节省 COS 空间
+        String uploadPathPrefix = String.format("avatar/%s", loginUser.getId());
+
+        // 3. 直接调用现成的模版方法！
+        // 它会自动帮我们：校验格式大小、转 WebP、压缩、上传到 COS
+        UploadPictureResult uploadPictureResult = uploadFilePicture.uploadPicture(multipartFile, uploadPathPrefix);
+
+        // 4. 只把上传成功后的 URL 返回给前端即可
+        return uploadPictureResult.getUrl();
+    }
+
+    /**
+     * 兑换VIP功能
+     * @param userExchangeVipRequest
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean exchangeVip(UserExchangeVipRequest userExchangeVipRequest, HttpServletRequest request) {
+        // 1. 基本校验
+        String vipCode = userExchangeVipRequest.getVipCode();
+        User loginUser = this.getLoginUser(request);
+
+        // 2. 设置一个兑换码（实际开发中这里应该查数据库的兑换码表）
+        final String SECRET_VIP_CODE = "tuku666";
+
+        // 3. 匹配兑换码
+        if (!SECRET_VIP_CODE.equals(vipCode)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "兑换码错误或已失效");
+        }
+
+        // 4. 检查是否已经是 VIP，防止浪费
+        if (UserRoleEnum.VIP.getValue().equals(loginUser.getUserRole())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "您已经是尊贵的 VIP 用户，无需重复兑换");
+        }
+
+        // 5. 修改用户角色
+        User user = new User();
+        user.setId(loginUser.getId());
+        user.setUserRole(UserRoleEnum.VIP.getValue());
+
+        // 6. 更新数据库
+        boolean result = this.updateById(user);
+
+        return result;
     }
 }
 

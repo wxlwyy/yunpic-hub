@@ -122,7 +122,8 @@ public abstract class UploadPictureTemplate {
         return uploadPictureResult;
     }
 
-    private UploadPictureResult getUploadPictureResult(String originFilename, CIObject compressPicObject, CIObject thumbnailPicObject, ImageInfo imageInfo) {
+    private UploadPictureResult getUploadPictureResult(String originFilename, CIObject compressPicObject,
+                                                       CIObject thumbnailPicObject, ImageInfo imageInfo) {
         int width = compressPicObject.getWidth();
         int height = compressPicObject.getHeight();
         double picScale = NumberUtil.round((width * 1.0 / height), 2).doubleValue();

@@ -54,7 +54,7 @@ public class UploadUrlPicture extends UploadPictureTemplate{
                 if (StrUtil.isNotBlank(contentLengthStr)){
                     long contentLength = Long.parseLong(contentLengthStr);
                     final long ONE_MB = 1024 * 1024L;
-                    ThrowUtils.throwIf(contentLength > 2 * ONE_MB, ErrorCode.PARAMS_ERROR, "文件大小不能超过2MB");
+                    ThrowUtils.throwIf(contentLength > 5 * ONE_MB, ErrorCode.PARAMS_ERROR, "文件大小不能超过5MB");
                 }
             } catch (NumberFormatException e) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件过大");

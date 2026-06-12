@@ -3,12 +3,11 @@ package com.wyy.yunpicturebackend.service;
 import cn.hutool.http.server.HttpServerRequest;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.wyy.yunpicturebackend.model.dto.user.QueryUserRequest;
-import com.wyy.yunpicturebackend.model.dto.user.UserLoginRequest;
-import com.wyy.yunpicturebackend.model.dto.user.UserRegisterRequest;
+import com.wyy.yunpicturebackend.model.dto.user.*;
 import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.vo.LoginUserVO;
 import com.wyy.yunpicturebackend.model.vo.UserVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -90,4 +89,28 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean isAdmin(User user);
+
+    /**
+     * 用户修改自己的信息
+     * @param userUpdateMyRequest
+     * @param request
+     * @return
+     */
+    boolean updateMyUser(UserUpdateMyRequest userUpdateMyRequest, HttpServletRequest request);
+
+    /**
+     * 上传用户头像
+     * @param multipartFile
+     * @param request
+     * @return
+     */
+    String uploadUserAvatar(MultipartFile multipartFile, HttpServletRequest request);
+
+    /**
+     * 兑换VIP功能
+     * @param userExchangeVipRequest
+     * @param request
+     * @return
+     */
+    boolean exchangeVip(UserExchangeVipRequest userExchangeVipRequest, HttpServletRequest request);
 }

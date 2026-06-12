@@ -59,6 +59,36 @@ public class PictureEditHandler extends TextWebSocketHandler {
         // 广播给同一张图片的所有用户
         broadcastToPicture(pictureId, pictureEditResponseMessage);
     }
+    // 修改 afterConnectionEstablished 方法
+    /*@Override
+    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        Long pictureId = (Long) session.getAttributes().get("pictureId");
+        User user = (User) session.getAttributes().get("user");
+
+        editingPictureSessions.putIfAbsent(pictureId, new ConcurrentHashMap<>().newKeySet());
+        editingPictureSessions.get(pictureId).add(session);
+
+        // 1. 广播通知：某人进入了房间 (不改变编辑状态)
+        PictureEditResponseMessage joinMsg = new PictureEditResponseMessage();
+        joinMsg.setType(PictureEditMessageTypeEnum.INFO.getValue());
+        joinMsg.setMessage(String.format("%s 进入了协作室", user.getUserName()));
+        joinMsg.setUserVO(userService.getUserVO(user));
+        broadcastToPicture(pictureId, joinMsg);
+
+        // 2. 【核心修复】同步状态给新人：告诉他谁正占着坑
+        Long currentEditingUserId = editingPictureUsers.get(pictureId);
+        if (currentEditingUserId != null) {
+            User editingUser = userService.getById(currentEditingUserId);
+            PictureEditResponseMessage syncMsg = new PictureEditResponseMessage();
+            // 关键：发回给新人一个正式的 ENTER_EDIT 消息，让他同步 UI
+            syncMsg.setType(PictureEditMessageTypeEnum.ENTER_EDIT.getValue());
+            syncMsg.setMessage(String.format("当前 %s 正在编辑", editingUser.getUserName()));
+            syncMsg.setUserVO(userService.getUserVO(editingUser));
+
+            // 只发给当前加入的用户，不广播
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(syncMsg)));
+        }
+    }*/
 
     /**
      * 广播消息
