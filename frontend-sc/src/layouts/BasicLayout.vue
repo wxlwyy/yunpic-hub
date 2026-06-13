@@ -16,7 +16,7 @@
       </a-layout>
 
       <a-layout-footer v-if="!isAuthPage" class="footer">
-        智能协同云图库 · CloudPic ©2026
+        云图工坊 · CloudPic ©2026
       </a-layout-footer>
     </a-layout>
   </div>

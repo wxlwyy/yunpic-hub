@@ -11,7 +11,7 @@
       <div class="header">
         <div class="logo-area">
           <img src="@/assets/logo.png" alt="logo" class="logo" />
-          <h2 class="title">云图库</h2>
+          <h2 class="title">云图工坊</h2>
         </div>
         <div class="desc">智能协同 · 视觉资产管理专家</div>
       </div>
