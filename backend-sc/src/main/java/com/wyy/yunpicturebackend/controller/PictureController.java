@@ -104,7 +104,7 @@ public class PictureController {
      * @return
      */
     @PostMapping("/upload/url")
-    @AuthCheck(requiredRole = "vip")
+    @AuthCheck(anyRole = {"vip", "admin"})
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_UPLOAD)
     public BaseResponse<PictureVO> uploadPictureByUrl(@RequestBody UploadPictureRequest uploadPictureRequest,
                                                       HttpServletRequest request){
@@ -120,7 +120,7 @@ public class PictureController {
      * @param request
      * @return
      */
-    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(anyRole = {UserConstant.ADMIN_ROLE})
     @PostMapping("/upload/batch")
     public BaseResponse<Integer> uploadPictureByBatch(@RequestBody UploadPictureByBatchRequest uploadPictureByBatchRequest,
                                                         HttpServletRequest request){
@@ -154,7 +154,7 @@ public class PictureController {
      * @param updatePictureRequest
      * @return
      */
-    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(anyRole = {UserConstant.ADMIN_ROLE})
     @PostMapping("/update")
     public BaseResponse<Boolean> updatePicture(@RequestBody UpdatePictureRequest updatePictureRequest,
                                                HttpServletRequest request){
@@ -220,7 +220,7 @@ public class PictureController {
      * @param queryPictureRequest
      * @return
      */
-    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(anyRole = {UserConstant.ADMIN_ROLE})
     @PostMapping("/list/page")
     public BaseResponse<Page<Picture>> listPictureByPage(@RequestBody QueryPictureRequest queryPictureRequest){
         //获取当前页，每页条数，查询条件
@@ -325,7 +325,7 @@ public class PictureController {
      * @param id
      * @return
      */
-    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(anyRole = {UserConstant.ADMIN_ROLE})
     @GetMapping("/get")
     public BaseResponse<Picture> getPictureById(Long id){
         //校验参数
@@ -410,7 +410,7 @@ public class PictureController {
      * @param request
      * @return
      */
-    @AuthCheck(requiredRole = UserConstant.ADMIN_ROLE)
+    @AuthCheck(anyRole = {UserConstant.ADMIN_ROLE})
     @PostMapping("/review")
     public BaseResponse<Boolean> reviewPicture(@RequestBody ReviewPictureRequest reviewPictureRequest, HttpServletRequest request){
         ThrowUtils.throwIf(reviewPictureRequest == null, ErrorCode.PARAMS_ERROR);
@@ -424,7 +424,7 @@ public class PictureController {
      * @return
      */
     @PostMapping("/search/picture")
-    @AuthCheck(requiredRole = "vip")
+    @AuthCheck(anyRole = {"vip", "admin"})
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_VIEW)
     public BaseResponse<List<ImageSearchResult>> searchPictureByPicture(@RequestBody SearchPictureByPictureRequest searchPictureByPictureRequest){
         ThrowUtils.throwIf(searchPictureByPictureRequest == null, ErrorCode.PARAMS_ERROR);
@@ -444,7 +444,7 @@ public class PictureController {
      */
     @PostMapping("/search/color")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_VIEW)
-    @AuthCheck(requiredRole = "vip")
+    @AuthCheck(anyRole = {"vip", "admin"})
     public BaseResponse<List<PictureVO>> searchPictureByColor(@RequestBody SearchPictureByColorRequest searchPictureByColorRequest, HttpServletRequest request){
         ThrowUtils.throwIf(searchPictureByColorRequest == null, ErrorCode.PARAMS_ERROR);
         Long spaceId = searchPictureByColorRequest.getSpaceId();
@@ -462,7 +462,7 @@ public class PictureController {
      */
     @PostMapping("/out_painting/create_task")
     @SaSpaceCheckPermission(value = SpaceUserPermissionConstant.PICTURE_VIEW)
-    @AuthCheck(requiredRole = "vip")
+    @AuthCheck(anyRole = {"vip", "admin"})
     public BaseResponse<CreateOutPaintingTaskResponse> createPictureOutPaintingTask(
             @RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
             HttpServletRequest request){

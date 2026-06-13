@@ -8,9 +8,9 @@ import lombok.Getter;
 public enum UserRoleEnum {
 
 
-    USER("普通用户", "user", 1),
-    VIP("会员用户", "vip", 2),
-    ADMIN("管理员", "admin", 99);
+    USER("普通用户", "user"),
+    VIP("会员用户", "vip"),
+    ADMIN("管理员", "admin");
 
     /**
      * 角色标签
@@ -22,15 +22,9 @@ public enum UserRoleEnum {
      */
     private final String value;
 
-    /**
-     * 新增：代表权限等级
-     */
-    private final int level;
-
-    UserRoleEnum(String text, String value, int level) {
+    UserRoleEnum(String text, String value) {
         this.text = text;
         this.value = value;
-        this.level = level;
     }
 
     /**
@@ -48,13 +42,5 @@ public enum UserRoleEnum {
             }
         }
         return null;
-    }
-
-    /**
-     * 获取等级，如果找不到角色则返回最低等级 0
-     */
-    public static int getLevelByValue(String value) {
-        UserRoleEnum userRoleEnum = getEnumByValue(value);
-        return userRoleEnum == null ? 0 : userRoleEnum.getLevel();
     }
 }

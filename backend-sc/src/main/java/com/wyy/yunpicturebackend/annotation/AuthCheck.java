@@ -10,8 +10,8 @@ import java.lang.annotation.Target;
 public @interface AuthCheck {
 
     /**
-     * 访问接口所需要的角色
-     * @return
+     * 允许访问的角色列表（满足其中任一角色即可）
+     * 例如：anyRole = {"admin", "vip"} 表示管理员或VIP用户都可以访问
      */
-    String requiredRole() default "";
+    String[] anyRole() default {};
 }

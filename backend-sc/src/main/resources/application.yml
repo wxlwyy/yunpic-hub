@@ -74,7 +74,7 @@ mybatis-plus:  #mybatisplus配置
 knife4j:  #接口文档配置，默认地址：http://localhost:8080/api/doc.html
   enable: true
   openapi:
-    title: 智能协同云图库接口文档
+    title: 云图工坊接口文档
     description: "`我是测试`,**你知道吗**
     # aaa"
     email: xiaoymin@foxmail.com
