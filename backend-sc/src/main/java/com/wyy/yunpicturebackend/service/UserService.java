@@ -105,12 +105,4 @@ public interface UserService extends IService<User> {
      * @return
      */
     String uploadUserAvatar(MultipartFile multipartFile, HttpServletRequest request);
-
-    /**
-     * 兑换VIP功能
-     * @param userExchangeVipRequest
-     * @param request
-     * @return
-     */
-    boolean exchangeVip(UserExchangeVipRequest userExchangeVipRequest, HttpServletRequest request);
 }
