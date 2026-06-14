@@ -91,6 +91,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseListString_ = {
+    code?: number
+    data?: string[]
+    message?: string
+  }
+
   type BaseResponseLoginUserVO_ = {
     code?: number
     data?: LoginUserVO
@@ -130,6 +136,18 @@ declare namespace API {
   type BaseResponsePageUserVO_ = {
     code?: number
     data?: PageUserVO_
+    message?: string
+  }
+
+  type BaseResponsePageVipCode_ = {
+    code?: number
+    data?: PageVipCode_
+    message?: string
+  }
+
+  type BaseResponsePageVipOrder_ = {
+    code?: number
+    data?: PageVipOrder_
     message?: string
   }
 
@@ -230,6 +248,14 @@ declare namespace API {
     spaceName?: string
   }
 
+  type GenerateVipCodeRequest = {
+    count?: number
+    description?: string
+    prefix?: string
+    validDays?: number
+    vipDuration?: number
+  }
+
   type GetOutPaintingTaskResponse = {
     output?: Output1
     requestId?: string
@@ -273,6 +299,28 @@ declare namespace API {
   type ImageSearchResult = {
     objUrl?: string
     thumbUrl?: string
+  }
+
+  type listVipCodeUsingGETParams = {
+    code?: string
+    current?: number
+    description?: string
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    status?: number
+    vipDuration?: number
+  }
+
+  type listVipOrderUsingGETParams = {
+    code?: string
+    current?: number
+    endCreateTime?: string
+    pageSize?: number
+    sortField?: string
+    sortOrder?: string
+    startCreateTime?: string
+    userId?: number
   }
 
   type LoginUserVO = {
@@ -338,6 +386,22 @@ declare namespace API {
     current?: number
     pages?: number
     records?: UserVO[]
+    size?: number
+    total?: number
+  }
+
+  type PageVipCode_ = {
+    current?: number
+    pages?: number
+    records?: VipCode[]
+    size?: number
+    total?: number
+  }
+
+  type PageVipOrder_ = {
+    current?: number
+    pages?: number
+    records?: VipOrder[]
     size?: number
     total?: number
   }
@@ -630,6 +694,11 @@ declare namespace API {
     filepath?: string
   }
 
+  type toggleVipCodeUsingPOSTParams = {
+    /** id */
+    id: number
+  }
+
   type UpdatePictureRequest = {
     category?: string
     id?: number
@@ -686,6 +755,7 @@ declare namespace API {
     userPassword?: string
     userProfile?: string
     userRole?: string
+    vipExpireTime?: string
   }
 
   type UserExchangeVipRequest = {
@@ -717,5 +787,30 @@ declare namespace API {
     userName?: string
     userProfile?: string
     userRole?: string
+  }
+
+  type VipCode = {
+    code?: string
+    createTime?: string
+    description?: string
+    expirationTime?: string
+    id?: number
+    isDelete?: number
+    status?: number
+    updateTime?: string
+    vipDuration?: number
+  }
+
+  type VipOrder = {
+    code?: string
+    codeId?: number
+    createTime?: string
+    id?: number
+    isDelete?: number
+    newExpireTime?: string
+    oldExpireTime?: string
+    updateTime?: string
+    userId?: number
+    vipDuration?: number
   }
 }

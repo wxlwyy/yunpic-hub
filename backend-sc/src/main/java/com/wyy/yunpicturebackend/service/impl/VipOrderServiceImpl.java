@@ -109,7 +109,8 @@ public class VipOrderServiceImpl extends ServiceImpl<VipOrderMapper, VipOrder> i
 
         // 按兑换时间范围筛选
         if (queryRequest.getStartCreateTime() != null) {
-            queryWrapper.ge("createTime", queryRequest.getStartCreateTime());
+            queryWrapper.ge("create" +
+                    "Time", queryRequest.getStartCreateTime());
         }
         if (queryRequest.getEndCreateTime() != null) {
             queryWrapper.le("createTime", queryRequest.getEndCreateTime());

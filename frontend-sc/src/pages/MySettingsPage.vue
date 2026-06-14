@@ -49,6 +49,17 @@
                   {{ isAdmin ? '超级管理员' : (isVip ? '尊贵 VIP' : '普通用户') }}
                 </a-tag>
               </div>
+              <!-- VIP 过期时间显示 -->
+              <div v-if="isVip" class="vip-info" style="margin-top: 12px">
+                <span class="label">到期时间：</span>
+                <span v-if="vipExpireTime" :class="isExpired ? 'expired-time' : 'valid-time'">
+                  {{ formatExpireTime }}
+                  <a-tag :color="isExpired ? 'red' : 'green'" style="margin-left: 8px">
+                    {{ isExpired ? '已过期' : '有效' }}
+                  </a-tag>
+                </span>
+                <span v-else style="color: #999">未设置</span>
+              </div>
               <a-divider />
               <div class="exchange-section">
                 <p>使用兑换码升级为 VIP，解锁更多空间和高级功能：</p>
@@ -75,7 +86,8 @@ import { ref, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/useLoginUserStore'
 import { updateMyUserUsingPost, exchangeVipUsingPost } from '@/api/userController'
-import AvatarUploader from '@/components/AvatarUploader.vue' // 稍后微调这个组件
+import AvatarUploader from '@/components/AvatarUploader.vue'
+import dayjs from 'dayjs'
 
 const loginUserStore = useLoginUserStore()
 const activeKey = ref('basic')
@@ -103,6 +115,17 @@ onMounted(() => {
 // 身份判断
 const isAdmin = computed(() => loginUserStore.loginUser.userRole === 'admin')
 const isVip = computed(() => loginUserStore.loginUser.userRole === 'vip')
+
+// VIP 过期时间
+const vipExpireTime = computed(() => loginUserStore.loginUser.vipExpireTime)
+const formatExpireTime = computed(() => {
+  if (!vipExpireTime.value) return ''
+  return dayjs(vipExpireTime.value).format('YYYY-MM-DD HH:mm:ss')
+})
+const isExpired = computed(() => {
+  if (!vipExpireTime.value) return false
+  return dayjs(vipExpireTime.value).isBefore(dayjs())
+})
 
 // 头像上传成功后的回调
 const handleAvatarSuccess = (url: string) => {
@@ -180,5 +203,17 @@ const handleExchangeVip = async () => {
 .label {
   color: #666;
   font-size: 14px;
+}
+
+.valid-time {
+  color: #52c41a;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.expired-time {
+  color: #ff4d4f;
+  font-weight: 600;
+  font-size: 15px;
 }
 </style>
