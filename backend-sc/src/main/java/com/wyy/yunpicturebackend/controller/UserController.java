@@ -15,6 +15,7 @@ import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.vo.LoginUserVO;
 import com.wyy.yunpicturebackend.model.vo.UserVO;
 import com.wyy.yunpicturebackend.service.UserService;
+import com.wyy.yunpicturebackend.service.VipOrderService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,6 +31,9 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private VipOrderService vipOrderService;
 
     /**
      * 用户注册
@@ -164,7 +168,7 @@ public class UserController {
     @PostMapping("/exchange/vip")
     public BaseResponse<Boolean> exchangeVip(@RequestBody @Validated UserExchangeVipRequest userExchangeVipRequest,
                                              HttpServletRequest request) {
-        boolean result = userService.exchangeVip(userExchangeVipRequest, request);
+        boolean result = vipOrderService.exchangeVip(userExchangeVipRequest, request);
         return ResultUtils.success(result);
     }
 

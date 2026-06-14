@@ -279,44 +279,4 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 4. 只把上传成功后的 URL 返回给前端即可
         return uploadPictureResult.getUrl();
     }
-
-    /**
-     * 兑换VIP功能
-     * @param userExchangeVipRequest
-     * @param request
-     * @return
-     */
-    @Override
-    public boolean exchangeVip(UserExchangeVipRequest userExchangeVipRequest, HttpServletRequest request) {
-        // 1. 基本校验
-        String vipCode = userExchangeVipRequest.getVipCode();
-        User loginUser = this.getLoginUser(request);
-
-        // 2. 设置一个兑换码（实际开发中这里应该查数据库的兑换码表）
-        final String SECRET_VIP_CODE = "tuku666";
-
-        // 3. 匹配兑换码
-        if (!SECRET_VIP_CODE.equals(vipCode)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "兑换码错误或已失效");
-        }
-
-        // 4. 检查是否已经是 VIP，防止浪费
-        if (UserRoleEnum.VIP.getValue().equals(loginUser.getUserRole())) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "您已经是尊贵的 VIP 用户，无需重复兑换");
-        }
-
-        // 5. 修改用户角色
-        User user = new User();
-        user.setId(loginUser.getId());
-        user.setUserRole(UserRoleEnum.VIP.getValue());
-
-        // 6. 更新数据库
-        boolean result = this.updateById(user);
-
-        return result;
-    }
 }
-
-
-
-

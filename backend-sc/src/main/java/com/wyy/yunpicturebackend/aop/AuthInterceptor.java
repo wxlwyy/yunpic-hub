@@ -1,10 +1,8 @@
 package com.wyy.yunpicturebackend.aop;
 
-import cn.hutool.core.util.StrUtil;
 import com.wyy.yunpicturebackend.annotation.AuthCheck;
 import com.wyy.yunpicturebackend.exception.BusinessException;
 import com.wyy.yunpicturebackend.exception.ErrorCode;
-import com.wyy.yunpicturebackend.exception.ThrowUtils;
 import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.enums.UserRoleEnum;
 import com.wyy.yunpicturebackend.service.UserService;
@@ -18,7 +16,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 
+/**
+ * 权限校验 AOP
+ * 只做读取和判断，不修改数据库（VIP 降级由定时任务处理）
+ */
 @Aspect
 @Component
 public class AuthInterceptor {
@@ -41,6 +44,16 @@ public class AuthInterceptor {
         HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
         User user = userService.getLoginUser(request);
         String currentUserRole = user.getUserRole();
+
+        // 检查 VIP 是否过期（只读，不修改数据库）
+        if (UserRoleEnum.VIP.getValue().equals(currentUserRole)) {
+            LocalDateTime vipExpireTime = user.getVipExpireTime();
+            // 有值且是过去时间 = 已过期
+            if (vipExpireTime != null && vipExpireTime.isBefore(LocalDateTime.now())) {
+                // VIP 已过期，按普通用户处理（不修改数据库，由定时任务统一处理）
+                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "您的 VIP 已过期，请续费后继续使用");
+            }
+        }
 
         // 判断用户角色是否在允许的角色列表中
         for (String allowedRole : allowedRoles) {
