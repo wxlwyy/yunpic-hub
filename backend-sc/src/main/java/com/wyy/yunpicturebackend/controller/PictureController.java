@@ -32,7 +32,9 @@ import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.enums.PictureReviewStatusEnum;
 import com.wyy.yunpicturebackend.model.vo.PictureTagCategory;
 import com.wyy.yunpicturebackend.model.vo.PictureVO;
+import com.wyy.yunpicturebackend.service.PictureCategoryService;
 import com.wyy.yunpicturebackend.service.PictureService;
+import com.wyy.yunpicturebackend.service.PictureTagService;
 import com.wyy.yunpicturebackend.service.SpaceService;
 import com.wyy.yunpicturebackend.service.UserService;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -70,6 +72,12 @@ public class PictureController {
 
     @Resource
     private SpaceUserAuthManager spaceUserAuthManager;
+
+    @Resource
+    private PictureCategoryService pictureCategoryService;
+
+    @Resource
+    private PictureTagService pictureTagService;
 
     /**
      * 本地缓存
@@ -390,15 +398,10 @@ public class PictureController {
     @GetMapping("/tag_category")
     public BaseResponse<PictureTagCategory> listPictureTagCategory(){
         PictureTagCategory pictureTagCategory = new PictureTagCategory();
-        //List<String> categoryList = Arrays.asList("模板", "电商", "表情包", "素材", "海报");
-        List<String> categoryList = Arrays.asList("精选", "壁纸", "建筑", "3D渲染", "纹理");
-//        List<String> tagList = Arrays.asList("热门", "搞笑", "生活", "高清", "艺术", "校园", "背景", "简历", "创意");
-        List<String> tagList = Arrays.asList(
-                "数字抽象", "风景", "现代简约", "生态自然",
-                "季节", "超现实境", "韵律构图", "动态生活",
-                "室内设计", "科幻未来", "抽象美学", "海洋探索",
-                "植物", "微距视界", "古典历史"
-        );
+        // 分类：从 picture_category 表查询所有启用分类
+        List<String> categoryList = pictureCategoryService.listCategoryNames();
+        // 标签：按使用次数降序，返回 TOP 50
+        List<String> tagList = pictureTagService.listHotTagNames(50);
         pictureTagCategory.setTagList(tagList);
         pictureTagCategory.setCategoryList(categoryList);
         return ResultUtils.success(pictureTagCategory);
