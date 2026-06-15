@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wyy.yunpicturebackend.mapper.PictureTagRelationMapper">
+
+    <!-- 根据图片ID查询关联的标签ID列表（只查自己的表） -->
+    <select id="selectTagIdsByPictureId" resultType="java.lang.Long">
+        SELECT tagId
+        FROM picture_tag_relation
+        WHERE pictureId = #{pictureId}
+    </select>
+
+    <!-- 热门标签：统计每个 tagId 出现次数，降序返回（只查自己的表） -->
+    <select id="selectHotTagIds" resultType="java.lang.Long">
+        SELECT tagId
+        FROM picture_tag_relation
+        GROUP BY tagId
+        ORDER BY COUNT(*) DESC
+        LIMIT #{topN}
+    </select>
+
+    <!-- 根据标签ID查询图片ID（OR 逻辑，只查自己的表） -->
+    <select id="selectPictureIdsByTagIds" resultType="java.lang.Long">
+        SELECT DISTINCT pictureId
+        FROM picture_tag_relation
+        WHERE tagId IN
+        <foreach collection="tagIds" item="tagId" open="(" close=")" separator=",">
+            #{tagId}
+        </foreach>
+    </select>
+
+    <!-- 批量插入关联 -->
+    <insert id="insertBatch">
+        INSERT INTO picture_tag_relation (pictureId, tagId)
+        VALUES
+        <foreach collection="tagIds" item="tagId" separator=",">
+            (#{pictureId}, #{tagId})
+        </foreach>
+    </insert>
+
+</mapper>

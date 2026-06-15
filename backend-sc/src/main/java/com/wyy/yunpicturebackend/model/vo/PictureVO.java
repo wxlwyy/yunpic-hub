@@ -149,7 +149,9 @@ public class PictureVO implements Serializable {
         }
         PictureVO pictureVO = new PictureVO();
         BeanUtil.copyProperties(picture, pictureVO);
-        pictureVO.setTags(JSONUtil.toList(picture.getTags(), String.class));
+        // 从旧 JSON 字段解析标签，null 时返回空列表避免前端 v-for 报错
+        List<String> tagList = JSONUtil.toList(picture.getTags(), String.class);
+        pictureVO.setTags(tagList != null ? tagList : new ArrayList<>());
         return pictureVO;
     }
 }
