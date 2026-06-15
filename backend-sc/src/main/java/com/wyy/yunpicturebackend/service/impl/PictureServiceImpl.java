@@ -6,6 +6,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -22,13 +23,16 @@ import com.wyy.yunpicturebackend.manager.upload.UploadUrlPicture;
 import com.wyy.yunpicturebackend.model.dto.file.UploadPictureResult;
 import com.wyy.yunpicturebackend.model.dto.picture.*;
 import com.wyy.yunpicturebackend.model.entity.Picture;
+import com.wyy.yunpicturebackend.model.entity.PictureCategory;
 import com.wyy.yunpicturebackend.model.entity.Space;
 import com.wyy.yunpicturebackend.model.entity.User;
 import com.wyy.yunpicturebackend.model.enums.PictureReviewStatusEnum;
 import com.wyy.yunpicturebackend.model.vo.PictureVO;
 import com.wyy.yunpicturebackend.model.vo.UserVO;
-import com.wyy.yunpicturebackend.service.PictureService;
 import com.wyy.yunpicturebackend.mapper.PictureMapper;
+import com.wyy.yunpicturebackend.service.PictureCategoryService;
+import com.wyy.yunpicturebackend.service.PictureService;
+import com.wyy.yunpicturebackend.service.PictureTagService;
 import com.wyy.yunpicturebackend.service.SpaceService;
 import com.wyy.yunpicturebackend.service.UserService;
 import com.wyy.yunpicturebackend.utils.ColorSimilarUtils;
@@ -80,6 +84,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
 
     @Resource
     private ALiYunAiApi aLiYunAiApi;
+
+    @Resource
+    private PictureCategoryService pictureCategoryService;
+
+    @Resource
+    private PictureTagService pictureTagService;
 
     /**
      * 上传或替换图片
@@ -298,6 +308,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             //删除
             boolean success = removeById(pictureId);
             ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR, "删除失败");
+            //清理标签关联
+            try {
+                pictureTagService.deleteRelationsByPictureId(pictureId);
+            } catch (Exception e) {
+                log.debug("清理标签关联失败: {}", e.getMessage());
+            }
             //私人图库计算大小
             if (finalSpaceId != null) {
                 //删除图片，更新空间大小
@@ -328,6 +344,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         BeanUtil.copyProperties(editPictureRequest, picture);
         picture.setEditTime(new Date());
         picture.setTags(JSONUtil.toJsonStr(editPictureRequest.getTags()));
+        // 同步分类到新表（仅查找不自动创建，分类由管理员管理）
+        if (StrUtil.isNotBlank(editPictureRequest.getCategory())) {
+            Long categoryId = pictureCategoryService.getByName(editPictureRequest.getCategory());
+            if (categoryId != null) {
+                picture.setCategoryId(categoryId);
+            }
+            // categoryId 为 null 说明用户输入了不存在的分类 → 忽略
+        }
         //详细校验
         validPicture(picture);
         //空间权限校验，已经改为使用sa-token注解鉴权
@@ -337,6 +361,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //操作数据库更新信息
         boolean success = updateById(picture);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
+        // 同步标签到新表
+        if (editPictureRequest.getTags() != null) {
+            pictureTagService.deleteRelationsByPictureId(picture.getId());
+            pictureTagService.addRelations(picture.getId(), editPictureRequest.getTags());
+        }
     }
 
     /**
@@ -373,9 +402,14 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             return;
         }
         //给图片类集合赋值统一的标签和分类
+        Long categoryId = null;
+        if (StrUtil.isNotBlank(category)) {
+            categoryId = pictureCategoryService.getByName(category);
+        }
         for (Picture picture : pictureList) {
             if (StrUtil.isNotBlank(category)) {
                 picture.setCategory(category);
+                picture.setCategoryId(categoryId);
             }
             if (CollUtil.isNotEmpty(tags)) {
                 picture.setTags(JSONUtil.toJsonStr(tags));
@@ -388,6 +422,13 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         //更新
         boolean success = updateBatchById(pictureList);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
+        // 同步标签到新表
+        if (CollUtil.isNotEmpty(tags)) {
+            for (Picture picture : pictureList) {
+                pictureTagService.deleteRelationsByPictureId(picture.getId());
+                pictureTagService.addRelations(picture.getId(), tags);
+            }
+        }
     }
 
     /**
@@ -453,6 +494,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     public PictureVO getPictureVO(Picture picture) {
         //将数据转移
         PictureVO pictureVO = PictureVO.objToVo(picture);
+        //从新表填充分类名
+        fillCategoryName(picture, pictureVO);
+        //从新表填充标签
+        fillPictureTags(picture, pictureVO);
         //查出图片相关的User信息
         Long userId = pictureVO.getUserId();
         if (userId != null && userId > 0) {
@@ -461,6 +506,32 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             pictureVO.setUserVO(userVO);
         }
         return pictureVO;
+    }
+
+    /**
+     * 根据 categoryId 填充分类名到 VO
+     */
+    private void fillCategoryName(Picture picture, PictureVO pictureVO) {
+        if (picture.getCategoryId() != null) {
+            PictureCategory pc = pictureCategoryService.getById(picture.getCategoryId());
+            if (pc != null) {
+                pictureVO.setCategory(pc.getName());
+            }
+        }
+    }
+
+    /**
+     * 从 picture_tag_relation 填充标签列表到 VO
+     */
+    private void fillPictureTags(Picture picture, PictureVO pictureVO) {
+        try {
+            List<String> tagNames = pictureTagService.getTagNamesByPictureId(picture.getId());
+            if (CollUtil.isNotEmpty(tagNames)) {
+                pictureVO.setTags(tagNames);
+            }
+        } catch (Exception e) {
+            log.debug("从新表加载标签失败，沿用旧字段: {}", e.getMessage());
+        }
     }
 
     /**
@@ -481,7 +552,13 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             return pictureVOPage;
         }
         //把pictureList转为包装list
-        List<PictureVO> pictureVOList = pictureList.stream().map(p -> PictureVO.objToVo(p)).collect(Collectors.toList());
+        List<PictureVO> pictureVOList = pictureList.stream().map(p -> {
+            PictureVO vo = PictureVO.objToVo(p);
+            // 从新表填充分类名和标签（容错：查不到时沿用旧字段值）
+            fillCategoryName(p, vo);
+            fillPictureTags(p, vo);
+            return vo;
+        }).collect(Collectors.toList());
         //关联用户信息，先查所有用户Id（放到set防止重复），用Id查出集合，用户信息绑定
         Set<Long> userIdSet = pictureList.stream().map(p -> p.getUserId()).collect(Collectors.toSet());
         List<User> users = userService.listByIds(userIdSet);
@@ -544,7 +621,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.like(StrUtil.isNotBlank(name), "name", name);
         queryWrapper.like(StrUtil.isNotBlank(introduction), "introduction", introduction);
         queryWrapper.like(StrUtil.isNotBlank(reviewMessage), "reviewMessage", reviewMessage);
-        queryWrapper.eq(StrUtil.isNotBlank(category), "category", category);
+        // 分类查询：名称 → categoryId → 精确匹配
+        if (StrUtil.isNotBlank(category)) {
+            Long categoryId = pictureCategoryService.getByName(category);
+            if (categoryId != null) {
+                queryWrapper.eq("categoryId", categoryId);
+            } else {
+                // 分类不存在，返回空结果
+                queryWrapper.eq("categoryId", -1L);
+            }
+        }
         queryWrapper.eq(ObjUtil.isNotEmpty(picSize), "picSize", picSize);
         queryWrapper.eq(ObjUtil.isNotEmpty(picWidth), "picWidth", picWidth);
         queryWrapper.eq(ObjUtil.isNotEmpty(picHeight), "picHeight", picHeight);
@@ -557,8 +643,15 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         queryWrapper.ge(ObjUtil.isNotEmpty(startEditTime), "createTime", startEditTime);
         // <
         queryWrapper.lt(ObjUtil.isNotEmpty(endEditTime), "createTime", endEditTime);
+        // 标签搜索：标签名 → tagId → pictureId（走新表）
         if (CollUtil.isNotEmpty(tags)){
-            tags.forEach(tag -> queryWrapper.like("tags", "\"" + tag + "\""));
+            List<Long> pictureIds = pictureTagService.findPictureIdsByTagNames(tags);
+            if (CollUtil.isNotEmpty(pictureIds)) {
+                queryWrapper.in("id", pictureIds);
+            } else {
+                // 标签不存在 → 返回空结果
+                queryWrapper.eq("id", -1L);
+            }
         }
         // 如果前端没传 sortField，那就默认按 createTime 倒序
         if (StrUtil.isBlank(sortField)) {

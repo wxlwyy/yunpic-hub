@@ -47,12 +47,17 @@ public class Picture implements Serializable {
     private String introduction;
 
     /**
-     * 分类
+     * 分类（旧字段，迁移后删除）
      */
     private String category;
 
     /**
-     * 标签（json数组）
+     * 分类ID（关联 picture_category.id）
+     */
+    private Long categoryId;
+
+    /**
+     * 标签（JSON数组，旧字段，迁移后删除）
      */
     private String tags;
 
