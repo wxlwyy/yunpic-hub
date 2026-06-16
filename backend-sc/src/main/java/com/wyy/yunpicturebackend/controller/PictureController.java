@@ -170,13 +170,15 @@ public class PictureController {
         if (updatePictureRequest == null || updatePictureRequest.getId() < 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        //转为实体类
+        //查看是否存在
+        Long pictureId = updatePictureRequest.getId();
+        Picture oldPicture = pictureService.getById(pictureId);
+        ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
+        //转为实体类（基于旧数据叠加，避免覆盖已有字段）
         Picture picture = new Picture();
+        BeanUtil.copyProperties(oldPicture, picture);
         BeanUtil.copyProperties(updatePictureRequest, picture);
         picture.setTags(JSONUtil.toJsonStr(updatePictureRequest.getTags()));
-        //查看是否存在
-        Long pictureId = picture.getId();
-        Picture oldPicture = pictureService.getById(pictureId);
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
         //详细校验
         pictureService.validPicture(picture);

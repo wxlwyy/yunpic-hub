@@ -20,11 +20,21 @@ import java.util.stream.Collectors;
 public class PictureCategoryServiceImpl extends ServiceImpl<PictureCategoryMapper, PictureCategory>
         implements PictureCategoryService {
 
-    // ==================== 用户端 ====================
+    // ==================== 查询 ====================
+
+    @Override
+    public List<PictureCategory> listCategories(Integer isActive) {
+        LambdaQueryWrapper<PictureCategory> wrapper = new LambdaQueryWrapper<>();
+        if (isActive != null) {
+            wrapper.eq(PictureCategory::getIsActive, isActive);
+        }
+        wrapper.orderByAsc(PictureCategory::getSortOrder);
+        return list(wrapper);
+    }
 
     @Override
     public List<String> listCategoryNames() {
-        return listActiveCategories().stream()
+        return listCategories(1).stream()
                 .map(PictureCategory::getName)
                 .collect(Collectors.toList());
     }
@@ -43,19 +53,10 @@ public class PictureCategoryServiceImpl extends ServiceImpl<PictureCategoryMappe
     // ==================== 管理端 ====================
 
     @Override
-    public List<PictureCategory> listActiveCategories() {
-        LambdaQueryWrapper<PictureCategory> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PictureCategory::getIsActive, 1)
-               .orderByAsc(PictureCategory::getSortOrder);
-        return list(wrapper);
-    }
-
-    @Override
     public Long createCategory(String name, Integer sortOrder) {
         if (StrUtil.isBlank(name)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "分类名称不能为空");
         }
-        // 重名检查
         if (getByName(name.trim()) != null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "分类名称已存在");
         }
@@ -74,7 +75,6 @@ public class PictureCategoryServiceImpl extends ServiceImpl<PictureCategoryMappe
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "分类不存在");
         }
         if (StrUtil.isNotBlank(name)) {
-            // 重名检查（排除自身）
             Long existId = getByName(name.trim());
             if (existId != null && !existId.equals(id)) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "分类名称已存在");
