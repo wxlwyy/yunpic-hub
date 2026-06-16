@@ -1,4 +1,9 @@
 declare namespace API {
+  type AddCategoryRequest = {
+    name?: string
+    sortOrder?: number
+  }
+
   type AddSpaceRequest = {
     spaceLevel?: number
     spaceName?: string
@@ -40,6 +45,12 @@ declare namespace API {
   type BaseResponseListImageSearchResult_ = {
     code?: number
     data?: ImageSearchResult[]
+    message?: string
+  }
+
+  type BaseResponseListPictureCategory_ = {
+    code?: number
+    data?: PictureCategory[]
     message?: string
   }
 
@@ -332,6 +343,7 @@ declare namespace API {
     userName?: string
     userProfile?: string
     userRole?: string
+    vipExpireTime?: string
   }
 
   type Output = {
@@ -422,6 +434,7 @@ declare namespace API {
 
   type Picture = {
     category?: string
+    categoryId?: number
     createTime?: string
     editTime?: string
     id?: number
@@ -444,6 +457,15 @@ declare namespace API {
     updateTime?: string
     url?: string
     userId?: number
+  }
+
+  type PictureCategory = {
+    createTime?: string
+    id?: number
+    isActive?: number
+    name?: string
+    sortOrder?: number
+    updateTime?: string
   }
 
   type PictureTagCategory = {
@@ -697,6 +719,13 @@ declare namespace API {
   type toggleVipCodeUsingPOSTParams = {
     /** id */
     id: number
+  }
+
+  type UpdateCategoryRequest = {
+    id?: number
+    isActive?: number
+    name?: string
+    sortOrder?: number
   }
 
   type UpdatePictureRequest = {

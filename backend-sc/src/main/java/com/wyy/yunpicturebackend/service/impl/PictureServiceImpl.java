@@ -682,13 +682,22 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR);
         //不能重复审核
         ThrowUtils.throwIf(oldPicture.getReviewStatus().equals(reviewStatus), ErrorCode.PARAMS_ERROR,"请勿重复审核");
-        //更新审核信息
+        //更新审核信息（基于旧数据叠加，避免覆盖已有字段）
         Picture picture = new Picture();
+        BeanUtil.copyProperties(oldPicture, picture);
         BeanUtil.copyProperties(reviewPictureRequest, picture);
         picture.setReviewTime(new Date());
         picture.setReviewerId(loginUser.getId());
         boolean success = updateById(picture);
         ThrowUtils.throwIf(!success, ErrorCode.OPERATION_ERROR);
+        // 审核拒绝时清理标签关联，避免脏数据残留
+        if (PictureReviewStatusEnum.REJECT.getValue() == reviewStatus) {
+            try {
+                pictureTagService.deleteRelationsByPictureId(pictureId);
+            } catch (Exception e) {
+                log.debug("清理标签关联失败: {}", e.getMessage());
+            }
+        }
         return true;
     }
 

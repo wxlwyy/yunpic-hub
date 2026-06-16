@@ -33,7 +33,7 @@ public class AdminCategoryController {
     @GetMapping("/list")
     @AuthCheck(anyRole = {UserConstant.ADMIN_ROLE})
     public BaseResponse<List<PictureCategory>> listCategories() {
-        List<PictureCategory> list = pictureCategoryService.listActiveCategories();
+        List<PictureCategory> list = pictureCategoryService.listCategories(null);
         return ResultUtils.success(list);
     }
 
